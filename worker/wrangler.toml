@@ -1,0 +1,15 @@
+name = "otp-inbox-worker"
+main = "worker.js"
+compatibility_date = "2026-09-25"
+
+# Keep-alive: ping the backend /health endpoint so PaaS instances (e.g. Koyeb)
+# do not cold-start when an OTP email arrives.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Secrets (never commit these — set with wrangler):
+#
+#   wrangler secret put WORKER_INGEST_TOKEN   # must match WORKER_INGEST_TOKEN on the API
+#   wrangler secret put APP_INGEST_URL        # e.g. https://your-app.example.com/api/ingest
+#
+# The token is the control plane between the public internet and /api/ingest.

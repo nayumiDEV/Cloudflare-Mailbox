@@ -1,0 +1,54 @@
+# Secrets & local config
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.envrc
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Node (JS tests)
+node_modules/
+tests/js/node_modules/
+npm-debug.log*
+
+# Local data & runtime
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Cloudflare Wrangler
+.wrangler/
+worker/.wrangler/
+.dev.vars
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Screenshots / local captures from manual UI tests
+tests/js/*.png
+*.log
