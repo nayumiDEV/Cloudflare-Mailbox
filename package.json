@@ -1,0 +1,11 @@
+{
+  "name": "otp-inbox-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OTP Inbox — catch-all email inbox with OTP extraction",
+  "scripts": {
+    "test": "npm --prefix tests/js test",
+    "test:unit": "npm --prefix tests/js run test:unit",
+    "test:e2e": "npm --prefix tests/js run test:e2e"
+  }
+}
