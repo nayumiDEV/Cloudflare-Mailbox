@@ -7,11 +7,8 @@ Incoming mail is received by a [Cloudflare Email Routing](https://developers.clo
 Worker and stored by a FastAPI backend (SQLite or PostgreSQL). A Gmail-inspired
 web UI lets you browse mailboxes, search messages, and manage routing rules.
 
-[![CI](https://github.com/OWNER/otp-inbox-app/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/otp-inbox-app/actions/workflows/ci.yml)
+[![CI](https://github.com/nayumiDEV/Cloudflare-Mailbox/actions/workflows/ci.yml/badge.svg)](https://github.com/nayumiDEV/Cloudflare-Mailbox/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
-> Replace `OWNER` in the badge URLs with your GitHub username or org after you
-> create the repository.
 
 ## Features
 

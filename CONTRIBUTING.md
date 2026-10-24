@@ -6,8 +6,8 @@ Thanks for helping improve OTP Inbox. By participating you agree to follow the
 ## Development setup
 
 ```bash
-git clone https://github.com/<you>/otp-inbox-app.git
-cd otp-inbox-app
+git clone https://github.com/nayumiDEV/Cloudflare-Mailbox.git
+cd Cloudflare-Mailbox
 
 python -m venv .venv
 # Windows
