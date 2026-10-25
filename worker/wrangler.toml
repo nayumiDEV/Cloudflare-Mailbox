@@ -7,9 +7,14 @@ compatibility_date = "2026-09-25"
 [triggers]
 crons = ["*/5 * * * *"]
 
+# Cloudflare Email Service — outbound send binding (Workers Paid + Email Sending).
+# Onboard the sending domain in Dashboard → Email Service → Email Sending first.
+[[send_email]]
+name = "EMAIL"
+
 # Secrets (never commit these — set with wrangler):
 #
-#   wrangler secret put WORKER_INGEST_TOKEN   # must match WORKER_INGEST_TOKEN on the API
+#   wrangler secret put WORKER_INGEST_TOKEN   # shared with API (ingest + /send)
 #   wrangler secret put APP_INGEST_URL        # e.g. https://your-app.example.com/api/ingest
 #
-# The token is the control plane between the public internet and /api/ingest.
+# Optional override for local tests (same token is used for /send auth).

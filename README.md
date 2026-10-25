@@ -1,6 +1,6 @@
 # OTP Inbox
 
-**Languages:** [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Русский](README.ru.md)
+**Languages:** [English](README.md) · [Tiếng Việt](docs/vi/README.md) · [中文](docs/zh/README.md) · [Русский](docs/ru/README.md)
 
 Self-hosted **catch-all email inbox** with automatic OTP extraction, multi-user
 access control, referral-gated registration, and a Developer API.
@@ -15,6 +15,7 @@ web UI lets you browse mailboxes, search messages, and manage routing rules.
 ## Features
 
 - **Catch-all ingest** via Cloudflare Worker → `POST /api/ingest`
+- **Outbound send** (optional) via Cloudflare Email Sending + Gmail-like Compose UI
 - **OTP extraction** from subject/body with false-positive scrubbing
 - **Mailboxes & routing rules** (exact, prefix, domain, regex, catch-all)
 - **Multi-user ACL** — owner, shared access, admin overrides
@@ -41,7 +42,12 @@ FastAPI  (app/main.py)  ·  SQLite or PostgreSQL
         │
         ▼
 Web UI  (static/)  +  REST API  (/api/*)
+
+Optional outbound:
+  UI Compose → POST /api/mailboxes/{id}/send → Worker /send → Email Sending
 ```
+
+Outbound setup: **[docs/en/SEND.md](docs/en/SEND.md)** · **[docs/vi/SEND.md](docs/vi/SEND.md)** (Workers Paid).
 
 ## Quick start (local)
 

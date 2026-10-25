@@ -30,9 +30,10 @@ Interactive docs (Swagger): `GET /docs`
 14. [Admin — Referrals](#14-admin--referrals)
 15. [Admin — Users](#15-admin--users)
 16. [Notifications & Audit](#16-notifications--audit)
-17. [Developer API (API Key)](#17-developer-api-api-key)
-18. [Mã lỗi](#18-mã-lỗi)
-19. [Ví dụ curl](#19-ví-dụ-curl)
+17. [Developer API (API Key)](#17-developer-api-convenience-apiv1)
+18. [Outbound send](#18-outbound-send)
+19. [Mã lỗi](#19-mã-lỗi)
+20. [Ví dụ curl](#20-ví-dụ-curl)
 
 ---
 
@@ -1183,7 +1184,53 @@ Raw MIME (`message/rfc822`) nếu user có access.
 
 ---
 
-## 18. Mã lỗi
+## 18. Outbound send
+
+Requires `WORKER_SEND_URL` (Cloudflare Email Sending + Workers Paid). Full guide: [en/SEND.md](en/SEND.md) · [vi/SEND.md](vi/SEND.md).
+
+### `POST /api/mailboxes/{mailbox_id}/send`
+
+Auth: session+CSRF or Bearer API key. **From** is always the mailbox address.
+
+```json
+{
+  "to": "user@example.com",
+  "cc": ["ops@example.com"],
+  "bcc": [],
+  "subject": "Hello",
+  "text": "Plain body",
+  "html": "<p>HTML</p>",
+  "attachments": [
+    {"filename": "a.txt", "type": "text/plain", "content": "SGVsbG8="}
+  ]
+}
+```
+
+```json
+{
+  "ok": true,
+  "id": 41,
+  "mailbox": "otp@example.com",
+  "cf_message_id": "…",
+  "status": "sent",
+  "to": ["user@example.com"],
+  "subject": "Hello"
+}
+```
+
+`503` if send is not configured. Failed Worker delivery still inserts `outbound_messages` with `status=failed`.
+
+### `GET /api/sent`
+
+Query: `mailbox_id`, `page`, `page_size`. Returns outbound rows visible to the caller.
+
+### `GET /api/sent/{id}`
+
+Full outbound message (body + recipients).
+
+---
+
+## 19. Mã lỗi
 
 | HTTP | Ý nghĩa |
 | --- | --- |
@@ -1198,7 +1245,7 @@ Raw MIME (`message/rfc822`) nếu user có access.
 
 ---
 
-## 19. Ví dụ curl
+## 20. Ví dụ curl
 
 ### Login + lấy CSRF
 

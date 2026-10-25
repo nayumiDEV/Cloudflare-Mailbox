@@ -67,6 +67,8 @@ window.LOCALES.ru = {
 
   /* ── sidebar ─────────────────────────────────────────────── */
   'sidebar.createMailbox':       'Создать ящик',
+  'sidebar.compose':             'Написать',
+  'sidebar.sent':                'Отправленные',
   'sidebar.closeMenu':           'Закрыть меню',
   'sidebar.searchMailbox':       'Найти ящик…',
   'sidebar.searchAriaLabel':     'Найти ящик',
@@ -77,6 +79,28 @@ window.LOCALES.ru = {
   'sidebar.accountBtn':          'Аккаунт',
   'sidebar.logoutBtn':           'Выйти',
   'sidebar.selectMailbox':       'Выбрать {address}',
+
+  /* ── compose ─────────────────────────────────────────────── */
+  'compose.titleNew':            'Новое письмо',
+  'compose.from':                'От',
+  'compose.to':                  'Кому',
+  'compose.cc':                  'Копия',
+  'compose.bcc':                 'Скрытая',
+  'compose.subject':             'Тема',
+  'compose.bodyPlaceholder':     'Напишите письмо…',
+  'compose.send':                'Отправить',
+  'compose.sending':             'Отправка…',
+  'compose.discard':             'Отменить',
+  'compose.cancel':              'Отмена',
+  'compose.attach':              'Вложить файл',
+  'compose.sentOk':              'Письмо отправлено.',
+  'compose.discardConfirm':      'Удалить черновик и закрыть окно написания?',
+  'compose.notEnabled':          'Исходящая почта не включена. Настройте WORKER_SEND_URL и Cloudflare Email Sending.',
+  'compose.noMailbox':           'У вас нет ящика для отправки.',
+  'compose.reply':               'Ответить',
+  'compose.emptySent':           'Отправленных писем пока нет.',
+  'compose.pickSent':            'Выберите отправленное письмо',
+  'compose.failed':              'Ошибка',
 
   /* ── inbox ───────────────────────────────────────────────── */
   'inbox.selectAll':             'Выбрать все письма на этой странице',

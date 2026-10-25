@@ -67,6 +67,10 @@ curl -s -X POST \
 | Admin — routing | `GET /api/admin/routing-rules` | |
 | Admin — referral | `POST /api/admin/referral-codes/generate` | |
 | Ingest | `POST /api/ingest` | Gọi bởi Cloudflare Worker; cần worker token |
+| Gửi thư | `POST /api/mailboxes/{id}/send` | Outbound Email Sending (cần `WORKER_SEND_URL`) |
+| Đã gửi | `GET /api/sent` · `GET /api/sent/{id}` | Lịch sử thư đi |
+
+Hướng dẫn gửi thư: **[SEND.md](SEND.md)**
 
 ---
 

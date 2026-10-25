@@ -68,6 +68,8 @@ window.LOCALES.vi = {
 
   /* ── sidebar ─────────────────────────────────────────────── */
   'sidebar.createMailbox':       'Tạo Mailbox',
+  'sidebar.compose':             'Soạn thư',
+  'sidebar.sent':                'Đã gửi',
   'sidebar.closeMenu':           'Đóng menu',
   'sidebar.searchMailbox':       'Tìm mailbox…',
   'sidebar.searchAriaLabel':     'Tìm mailbox',
@@ -78,6 +80,28 @@ window.LOCALES.vi = {
   'sidebar.accountBtn':          'Tài khoản',
   'sidebar.logoutBtn':           'Thoát',
   'sidebar.selectMailbox':       'Chọn {address}',
+
+  /* ── compose ─────────────────────────────────────────────── */
+  'compose.titleNew':            'Thư mới',
+  'compose.from':                'Từ',
+  'compose.to':                  'Đến',
+  'compose.cc':                  'Cc',
+  'compose.bcc':                 'Bcc',
+  'compose.subject':             'Chủ đề',
+  'compose.bodyPlaceholder':     'Soạn nội dung thư…',
+  'compose.send':                'Gửi',
+  'compose.sending':             'Đang gửi…',
+  'compose.discard':             'Huỷ',
+  'compose.cancel':              'Huỷ',
+  'compose.attach':              'Đính kèm tệp',
+  'compose.sentOk':              'Đã gửi thư.',
+  'compose.discardConfirm':      'Huỷ thư nháp và đóng cửa sổ soạn?',
+  'compose.notEnabled':          'Gửi email chưa được bật. Cấu hình WORKER_SEND_URL và Cloudflare Email Sending.',
+  'compose.noMailbox':           'Bạn chưa có mailbox nào để gửi từ đó.',
+  'compose.reply':               'Trả lời',
+  'compose.emptySent':           'Chưa có thư đã gửi.',
+  'compose.pickSent':            'Chọn một thư đã gửi để xem',
+  'compose.failed':              'Thất bại',
 
   /* ── inbox ───────────────────────────────────────────────── */
   'inbox.selectAll':             'Chọn tất cả thư trang này',

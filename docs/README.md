@@ -35,6 +35,15 @@ Canonical (Vietnamese/English mix, most detailed): [DEPLOY.md](DEPLOY.md)
 
 Canonical full reference (1 300+ lines): [API.md](API.md)
 
+## Outbound email (Email Sending)
+
+| Language | File |
+| --- | --- |
+| English | [en/SEND.md](en/SEND.md) |
+| Tiếng Việt | [vi/SEND.md](vi/SEND.md) |
+
+Requires Workers Paid + domain onboarded in Cloudflare Email Sending. Optional — inbox works without it.
+
 ---
 
 Back to project root: [README.md](../README.md)

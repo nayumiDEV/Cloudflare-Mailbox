@@ -72,9 +72,12 @@ def isolated_state():
     clear_rate_limits()
     with app_module.db() as conn:
         for table in ("registrations", "referral_codes", "notifications", "audit_logs",
-                      "sessions", "attachments", "message_reads", "messages", "mailbox_access",
-                      "mailboxes", "routing_rules", "mailbox_requests", "domains"):
-            conn.execute(f"DELETE FROM {table}")
+                      "sessions", "attachments", "message_reads", "messages", "outbound_messages",
+                      "mailbox_access", "mailboxes", "routing_rules", "mailbox_requests", "domains"):
+            try:
+                conn.execute(f"DELETE FROM {table}")
+            except Exception:
+                pass
         app_module.seed_domains(conn)
         # Keep the seeded admin so the `admin` fixture can log in, but drop
         # every other account, including ones from earlier tests.

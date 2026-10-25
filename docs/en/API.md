@@ -67,6 +67,10 @@ curl -s -X POST \
 | Admin — routing | `GET /api/admin/routing-rules` | |
 | Admin — referrals | `POST /api/admin/referral-codes/generate` | |
 | Ingest | `POST /api/ingest` | Called by Cloudflare Worker; requires worker token |
+| Send | `POST /api/mailboxes/{id}/send` | Outbound via Email Sending (needs `WORKER_SEND_URL`) |
+| Sent | `GET /api/sent` · `GET /api/sent/{id}` | Outbound history |
+
+Full outbound guide: **[SEND.md](SEND.md)**
 
 ---
 

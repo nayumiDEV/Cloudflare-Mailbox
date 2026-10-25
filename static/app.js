@@ -67,12 +67,34 @@ const S = {
     } catch (_) {}
     return new Set();
   })(),
+  sendEnabled: false,
+  sentItems: [],
+  sentTotal: 0,
+  sentPage: 1,
+  selectedSentId: null,
 };
 
 // Admin-only referral dashboard payload, loaded on demand.
 let adminReferral = null;
 let userAdminMailboxSelection = new Set();
 let userAdminUserId = 0;
+
+/* Gmail-style compose draft — lives outside #root so re-renders keep the draft. */
+const Compose = {
+  open: false,
+  minimized: false,
+  maximized: false,
+  mailboxId: 0,
+  to: '',
+  cc: '',
+  bcc: '',
+  subject: '',
+  body: '',
+  showCc: false,
+  showBcc: false,
+  attachments: [], // {filename, type, content (base64), size}
+  sending: false,
+};
 
 /* ------------------------------------------------------------------ utils */
 
@@ -135,6 +157,8 @@ const ICONS = {
   inbox: '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 1.19 1.97 2 3.44 2s2.75-.81 3.44-2H19v3zm0-5h-4.99c0 1.1-.9 2-2.01 2s-2.01-.9-2.01-2H5V5h14v9z"/>',
   mailboxes: '<path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>',
   rules: '<path d="M14 6l-3.79 3.79 2.12 2.12L16 8.24V14h2V6h-8v2h4zm-4 12l3.79-3.79-2.12-2.12L8 15.76V10H6v8h8v-2z"/>',
+  sent: '<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>',
+  compose: '<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>',
   users: '<path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>',
   referrals: '<path d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-1.99.89-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-1.54c-1.21.54-2 1.76-2 3.54s.79 3 2 3.54V18H4v-1.54c1.21-.54 2-1.76 2-3.54s-.79-3-2-3.54V6h16v2.46z"/>',
   notifications: '<path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>',
@@ -315,6 +339,10 @@ function openCommandPalette() {
     const term = q.trim().toLowerCase();
     const actions = [
       { id: 'inbox', label: 'Hộp thư (Inbox)', sub: 'Xem toàn bộ email nhận được', tag: 'Điều hướng', icon: icon('inbox', 18), shortcut: 'G I', run: () => { S.view = 'inbox'; render(); } },
+      ...(S.sendEnabled ? [
+        { id: 'compose', label: 'Soạn thư mới', sub: 'Gửi email từ một mailbox của bạn', tag: 'Hành động', icon: icon('compose', 18), shortcut: 'C', run: () => openCompose() },
+        { id: 'sent', label: 'Đã gửi (Sent)', sub: 'Xem thư đã gửi đi', tag: 'Điều hướng', icon: icon('sent', 18), shortcut: 'G T', run: () => goView('sent') },
+      ] : []),
       { id: 'mailboxes', label: isAdmin ? 'Mailbox & phân quyền' : 'Mailbox của tôi', sub: 'Quản lý danh sách hộp thư và gán quyền', tag: 'Điều hướng', icon: icon('mailboxes', 18), shortcut: 'G M', run: () => { S.view = 'mailboxes'; render(); } },
       { id: 'requests', label: 'Yêu cầu tạo Mailbox', sub: isAdmin ? 'Duyệt đơn xin cấp email của thành viên' : 'Xem tiến độ đơn xin cấp email', tag: 'Điều hướng', icon: icon('rules', 18), run: () => goView('requests') },
       ...(isAdmin ? [
@@ -472,15 +500,19 @@ function shortcutsModal() {
       <div class="shortcut-item"><span>Xem bảng phím tắt</span><span class="kbd">?</span></div>
       <div class="shortcut-item"><span>Email tiếp theo</span><span class="kbd">J</span></div>
       <div class="shortcut-item"><span>Email trước đó</span><span class="kbd">K</span></div>
-      <div class="shortcut-item"><span>Copy mã OTP nhanh</span><span class="kbd">C</span></div>
+      <div class="shortcut-item"><span>Copy mã OTP / Soạn thư</span><span class="kbd">C</span></div>
       <div class="shortcut-item"><span>Làm mới hộp thư</span><span class="kbd">R</span></div>
-      <div class="shortcut-item"><span>Đóng cửa sổ / Modal</span><span class="kbd">Esc</span></div>
+      <div class="shortcut-item"><span>Đóng cửa sổ / Soạn thư</span><span class="kbd">Esc</span></div>
     </div>
   `);
 }
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    if (document.getElementById('compose-dock')) {
+      closeCompose();
+      return;
+    }
     closeModal();
     return;
   }
@@ -535,7 +567,15 @@ document.addEventListener('keydown', e => {
         copyText(target.otp_code, `Đã copy OTP: ${target.otp_code}`);
         return;
       }
+      if (S.sendEnabled) {
+        e.preventDefault();
+        openCompose();
+        return;
+      }
     }
+  } else if ((e.key === 'c' || e.key === 'C') && S.sendEnabled && S.me) {
+    e.preventDefault();
+    openCompose();
   }
 });
 
@@ -676,6 +716,7 @@ async function init() {
     S.referral = m.referral || null;
     S.registrationOpen = !!m.registration_open;
     S.authConfig.registration_open = !!m.registration_open;
+    S.sendEnabled = !!m.send_enabled;
     await refreshData();
     render();
     startAutoPolling();
@@ -692,6 +733,7 @@ async function loadAuthConfig() {
   try {
     S.authConfig = await api('/api/auth/config');
     S.registrationOpen = !!S.authConfig.registration_open;
+    S.sendEnabled = !!S.authConfig.send_enabled;
     if (S.authConfig.app) document.title = S.authConfig.app;
   } catch {
     S.registrationOpen = false;
@@ -931,20 +973,25 @@ function onMailboxFilter(value) {
    ===================================================================== */
 
 function render() {
-  if (!S.me) return renderLogin();
+  if (!S.me) {
+    closeCompose(true);
+    return renderLogin();
+  }
   const scroll = captureScroll();
   const focus = captureFocus();
-  const management = S.view !== 'inbox';
+  const mailView = S.view === 'inbox' || S.view === 'sent';
+  const management = !mailView;
+  const hasSelection = S.view === 'inbox' ? !!S.selectedMessageId : !!S.selectedSentId;
   document.getElementById('root').innerHTML = LH(
     `<div class="app ${management ? 'management' : ''} ${S.sidebarCollapsed ? 'sidebar-collapsed' : ''}">` +
       renderHeader() +
       `<div class="gmail-body">` +
         `<div class="sidebar-backdrop ${S.mobileSidebarOpen ? 'active' : ''}" id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>` +
         `<aside class="sidebar ${S.sidebarCollapsed ? 'collapsed' : ''} ${S.mobileSidebarOpen ? 'mobile-open' : ''}" id="sidebar">${renderSidebar()}</aside>` +
-        `<section class="list-pane ${S.selectedMessageId ? 'mobile-hidden' : ''}">` +
-          `${S.view === 'inbox' ? renderInbox() : renderPageView()}</section>` +
-        `<section class="reader ${S.selectedMessageId ? 'mobile-open' : ''}">` +
-          `${S.view === 'inbox' ? renderReader() : renderNoReader()}</section>` +
+        `<section class="list-pane ${hasSelection ? 'mobile-hidden' : ''}">` +
+          `${S.view === 'inbox' ? renderInbox() : S.view === 'sent' ? renderSentList() : renderPageView()}</section>` +
+        `<section class="reader ${hasSelection ? 'mobile-open' : ''}">` +
+          `${S.view === 'inbox' ? renderReader() : S.view === 'sent' ? renderSentReader() : renderNoReader()}</section>` +
       `</div>` +
     `</div>`
   );
@@ -957,6 +1004,7 @@ function render() {
   }
   restoreScroll(scroll);
   restoreFocus(focus);
+  renderComposeDock();
 }
 
 function renderCurrent() {
@@ -1025,6 +1073,7 @@ function renderHeader() {
 
 function getViewTitle() {
   if (S.view === 'mailboxes') return 'Mailbox';
+  if (S.view === 'sent') return 'Đã gửi';
   if (S.view === 'rules') return 'Routing rules';
   if (S.view === 'users') return 'Người dùng';
   if (S.view === 'domains') return 'Quản lý Tên miền';
@@ -1091,6 +1140,10 @@ function goView(view) {
     loadMailboxRequests();
     return;
   }
+  if (view === 'sent') {
+    loadSent();
+    return;
+  }
   loadMessages(false).then(render);
 }
 
@@ -1140,15 +1193,24 @@ function renderSidebar() {
     <button class="gmail-icon-btn mobile-drawer-close-btn" type="button" onclick="closeMobileSidebar()" title="Đóng menu" aria-label="Đóng menu">✕</button>
   </div>
   <div class="gmail-compose-wrap">
-    <button class="gmail-compose-btn btn primary" type="button" onclick="newMailboxModal()" title="Tạo địa chỉ Mailbox mới">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-      <span>Tạo Mailbox</span>
-    </button>
+    ${S.sendEnabled ? `
+      <button class="gmail-compose-btn btn primary" type="button" onclick="openCompose()" title="Soạn thư mới">
+        ${icon('compose', 22)}
+        <span>Soạn thư</span>
+      </button>
+    ` : `
+      <button class="gmail-compose-btn btn primary" type="button" onclick="newMailboxModal()" title="Tạo địa chỉ Mailbox mới">
+        ${icon('compose', 22)}
+        <span>Tạo Mailbox</span>
+      </button>
+    `}
   </div>
   <nav class="nav">
     <div class="nav-section-label">WORKSPACE</div>
     ${navBtn('inbox', 'Hộp thư', unread ? String(unread) : '', 'inbox')}
+    ${S.sendEnabled ? navBtn('sent', 'Đã gửi', '', 'sent') : ''}
     ${navBtn('mailboxes', isAdmin ? 'Mailbox & phân quyền' : 'Mailbox của tôi', '', 'mailboxes')}
+    ${S.sendEnabled ? `<button class="nav-secondary" type="button" onclick="newMailboxModal()" title="Tạo địa chỉ Mailbox mới"><span class="nav-label-wrap"><span class="nav-icon">${icon('plus', 18)}</span><span>Tạo Mailbox</span></span></button>` : ''}
     ${navBtn('requests', 'Yêu cầu tạo email', reqBadge, 'rules')}
     ${navBtn('referrals', 'Mã giới thiệu', S.referral?.code ? '1' : '', 'referrals')}
     ${navBtn('notifications', 'Thông báo', notif ? String(notif) : '', 'notifications')}
@@ -1478,6 +1540,7 @@ function renderReader() {
       </div>
       <div class="reader-actions">
         <button class="btn secondary small mobile-only" onclick="closeReader()">← Hộp thư</button>
+        ${S.sendEnabled ? `<button class="btn primary small" onclick="replyToMessage()" title="Trả lời">${icon('compose', 14)} Trả lời</button>` : ''}
         <button class="btn secondary small" onclick="toggleReadState()">${m.is_read ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'}</button>
         <button class="btn secondary small" onclick="rawModal()">Raw .eml</button>
         <button class="btn secondary small" onclick="textModal()">Text</button>
@@ -1702,6 +1765,153 @@ function renderPageView() {
   if (S.view === 'audit') return renderAuditPage();
   if (S.view === 'account') return renderAccountPage();
   return renderNoReader();
+}
+
+/* ---------------------------------------------------------------- sent */
+
+async function loadSent(shouldRender = true) {
+  if (!S.sendEnabled) {
+    S.view = 'inbox';
+    if (shouldRender) render();
+    return;
+  }
+  S.loading = true;
+  try {
+    const p = new URLSearchParams({
+      mailbox_id: S.selectedMailboxId || 0,
+      page: S.sentPage,
+      page_size: S.pageSize,
+    });
+    const d = await api('/api/sent?' + p.toString());
+    S.sentItems = d.items || [];
+    S.sentTotal = d.total || 0;
+  } catch (e) {
+    S.sentItems = [];
+    S.sentTotal = 0;
+    toast(e.message);
+  } finally {
+    S.loading = false;
+    if (shouldRender) render();
+  }
+}
+
+function renderSentList() {
+  const pages = Math.max(1, Math.ceil(S.sentTotal / S.pageSize));
+  const m = S.mailboxes.find(x => x.id === S.selectedMailboxId);
+  return `<div class="toolbar">
+    <div class="gmail-action-bar">
+      <div class="gmail-action-left">
+        <button class="gmail-tool-btn" type="button" onclick="loadSent()" title="Làm mới danh sách">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        </button>
+        ${S.sendEnabled ? `<button class="gmail-tool-btn" type="button" onclick="openCompose()" title="Soạn thư mới">${icon('compose', 16)} <span>Soạn thư</span></button>` : ''}
+      </div>
+      <div class="gmail-action-right">
+        <span class="gmail-pagination-text">${S.sentTotal ? `${(S.sentPage - 1) * S.pageSize + 1}–${Math.min(S.sentPage * S.pageSize, S.sentTotal)} trong ${S.sentTotal}` : '0 thư'}</span>
+        <button class="gmail-tool-btn" ${S.sentPage <= 1 ? 'disabled' : ''} onclick="goSentPage(-1)" title="Trang trước">${icon('chevronLeft', 16)}</button>
+        <button class="gmail-tool-btn" ${S.sentPage >= pages ? 'disabled' : ''} onclick="goSentPage(1)" title="Trang sau">${icon('chevronRight', 16)}</button>
+      </div>
+    </div>
+    <div class="gmail-chips-row filter-row">
+      <div class="toolbar-mailbox-name">
+        <b>Đã gửi</b>
+        <span class="tiny muted" style="margin-left:6px">${S.selectedMailboxId ? esc(m?.address || '') : 'Tất cả mailbox'}</span>
+      </div>
+    </div>
+  </div>
+  <div class="list-scroll" data-scroll="list" role="list">
+    ${S.sentItems.map(renderSentRow).join('') || `<div class="empty">${S.loading ? 'Đang tải…' : 'Chưa có thư đã gửi.'}</div>`}
+  </div>`;
+}
+
+function renderSentRow(item) {
+  const to = (item.to_addrs || []).join(', ') || '(không có người nhận)';
+  const failed = item.status === 'failed';
+  return `<div class="msg-row ${S.selectedSentId === item.id ? 'active' : ''} ${failed ? 'sent-failed' : ''}" role="listitem" onclick="openSent(${item.id})">
+    <div class="msg-star-col" aria-hidden="true">${icon('sent', 16)}</div>
+    <div class="msg-main">
+      <div class="msg-top">
+        <span class="msg-from" title="${esc(to)}">${esc(to)}</span>
+        <span class="msg-date">${fmt(item.sent_at)}</span>
+      </div>
+      <div class="msg-subject-line">
+        <span class="msg-subject">${esc(item.subject || '(no subject)')}</span>
+        ${failed ? '<span class="badge red">Thất bại</span>' : ''}
+        ${item.has_attachments ? `<span class="msg-attach" title="Có tệp đính kèm">${icon('paperclip', 14)}</span>` : ''}
+      </div>
+      <div class="msg-preview tiny muted">${esc(item.mailbox_address || '')}${item.sent_by ? ` · ${esc(item.sent_by)}` : ''}</div>
+    </div>
+  </div>`;
+}
+
+function goSentPage(delta) {
+  S.sentPage = Math.max(1, S.sentPage + delta);
+  S.selectedSentId = null;
+  loadSent();
+}
+
+async function openSent(id) {
+  S.selectedSentId = id;
+  render();
+  try {
+    const d = await api(`/api/sent/${id}`);
+    if (S.selectedSentId !== id) return;
+    const el = document.getElementById('sent-reader-body');
+    if (!el) return;
+    const to = (d.to_addrs || []).join(', ');
+    const cc = (d.cc_addrs || []).join(', ');
+    const bcc = (d.bcc_addrs || []).join(', ');
+    el.innerHTML = LH(`
+      <div class="meta-row">
+        <span class="kbd">#${d.id}</span>
+        <span class="badge ${d.status === 'sent' ? 'green' : 'red'}">${esc(d.status)}</span>
+        ${d.cf_message_id ? `<span class="kbd mono">${esc(d.cf_message_id)}</span>` : ''}
+      </div>
+      ${d.error ? `<div class="notice error">${esc(d.error)}</div>` : ''}
+      <div class="card" style="margin-bottom:12px">
+        <div><b>Từ:</b> ${esc(d.mailbox_address)}</div>
+        <div><b>Đến:</b> ${esc(to)}</div>
+        ${cc ? `<div><b>Cc:</b> ${esc(cc)}</div>` : ''}
+        ${bcc ? `<div><b>Bcc:</b> ${esc(bcc)}</div>` : ''}
+        <div><b>Chủ đề:</b> ${esc(d.subject || '(no subject)')}</div>
+        <div class="tiny muted">${fmt(d.sent_at)}${d.sent_by ? ` · ${esc(d.sent_by)}` : ''}</div>
+      </div>
+      <div class="card"><div class="plain-mail">${esc(d.body_text || '')}</div></div>
+    `);
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+function renderSentReader() {
+  if (!S.selectedSentId) {
+    return `<div class="empty" style="margin:auto">Chọn một thư đã gửi để xem</div>`;
+  }
+  const item = S.sentItems.find(x => x.id === S.selectedSentId);
+  return `<div class="reader-header">
+      <div class="mobile-reader-bar mobile-only">
+        <button class="btn secondary small reader-back-btn" type="button" onclick="S.selectedSentId=null;render()" title="Quay lại">
+          ← Đã gửi
+        </button>
+      </div>
+      <div class="reader-subject">${esc(item?.subject || 'Đã gửi')}</div>
+      <div class="reader-actions">
+        <button class="btn secondary small mobile-only" onclick="S.selectedSentId=null;render()">← Đã gửi</button>
+        ${S.sendEnabled && item ? `<button class="btn primary small" onclick="composeFromSent(${item.id})">Soạn lại</button>` : ''}
+        <button class="btn ghost small" onclick="S.selectedSentId=null;render()" title="Đóng">×</button>
+      </div>
+    </div>
+    <div class="reader-body" data-scroll="reader" id="sent-reader-body"><div class="empty">Đang tải...</div></div>`;
+}
+
+function composeFromSent(id) {
+  const item = S.sentItems.find(x => x.id === id);
+  if (!item) return;
+  openCompose({
+    mailboxId: item.mailbox_id,
+    to: (item.to_addrs || []).join(', '),
+    subject: item.subject ? (item.subject.startsWith('Re:') ? item.subject : `Re: ${item.subject}`) : '',
+  });
 }
 
 function pageShell(title, subtitle, actions, body) {
@@ -3657,6 +3867,280 @@ async function testRules() {
       </div>`;
   } catch (e) {
     toast(e.message);
+  }
+}
+
+/* ========================================================================
+   Gmail-style compose dock
+   ===================================================================== */
+
+function isSendEnabled() {
+  return !!S.sendEnabled;
+}
+
+function openCompose(opts = {}) {
+  if (!S.sendEnabled) {
+    toast('Gửi email chưa được bật. Cấu hình WORKER_SEND_URL và Cloudflare Email Sending.', false);
+    return;
+  }
+  if (!S.mailboxes.length) {
+    toast('Bạn chưa có mailbox nào để gửi từ đó.', false);
+    return;
+  }
+  const preferred =
+    opts.mailboxId ||
+    S.selectedMailboxId ||
+    (S.mailboxes.find(m => m.is_owner) || S.mailboxes[0]).id;
+  Compose.open = true;
+  Compose.minimized = false;
+  Compose.maximized = false;
+  Compose.mailboxId = preferred;
+  Compose.to = opts.to || '';
+  Compose.cc = opts.cc || '';
+  Compose.bcc = opts.bcc || '';
+  Compose.subject = opts.subject || '';
+  Compose.body = opts.body || '';
+  Compose.showCc = !!(opts.cc);
+  Compose.showBcc = !!(opts.bcc);
+  Compose.attachments = [];
+  Compose.sending = false;
+  renderComposeDock();
+  setTimeout(() => {
+    const toEl = document.getElementById('compose-to');
+    const bodyEl = document.getElementById('compose-body');
+    if (opts.to && bodyEl) bodyEl.focus();
+    else if (toEl) toEl.focus();
+  }, 30);
+}
+
+function replyToMessage() {
+  const m = S.messages.find(x => x.id === S.selectedMessageId);
+  if (!m) return;
+  const mailbox = S.mailboxes.find(x => x.address === m.envelope_to)
+    || S.mailboxes.find(x => x.id === S.selectedMailboxId)
+    || S.mailboxes[0];
+  const subj = m.subject || '';
+  openCompose({
+    mailboxId: mailbox?.id,
+    to: m.envelope_from || '',
+    subject: subj.toLowerCase().startsWith('re:') ? subj : `Re: ${subj}`,
+    body: `\n\n---------- Thư gốc ----------\nTừ: ${m.envelope_from}\nNgày: ${m.received_at}\nChủ đề: ${m.subject || ''}\n\n`,
+  });
+}
+
+function closeCompose(force = false) {
+  if (!Compose.open && !document.getElementById('compose-dock')) return;
+  if (!force && (Compose.to || Compose.subject || Compose.body || Compose.attachments.length)) {
+    if (!confirm(LT('Huỷ thư nháp và đóng cửa sổ soạn?'))) return;
+  }
+  Compose.open = false;
+  Compose.attachments = [];
+  document.getElementById('compose-dock')?.remove();
+}
+
+function minimizeCompose() {
+  Compose.minimized = !Compose.minimized;
+  if (Compose.minimized) Compose.maximized = false;
+  syncComposeFromDom();
+  renderComposeDock();
+}
+
+function maximizeCompose() {
+  Compose.maximized = !Compose.maximized;
+  if (Compose.maximized) Compose.minimized = false;
+  syncComposeFromDom();
+  renderComposeDock();
+}
+
+function syncComposeFromDom() {
+  const mb = document.getElementById('compose-from');
+  const to = document.getElementById('compose-to');
+  const cc = document.getElementById('compose-cc');
+  const bcc = document.getElementById('compose-bcc');
+  const subject = document.getElementById('compose-subject');
+  const body = document.getElementById('compose-body');
+  if (mb) Compose.mailboxId = Number(mb.value) || Compose.mailboxId;
+  if (to) Compose.to = to.value;
+  if (cc) Compose.cc = cc.value;
+  if (bcc) Compose.bcc = bcc.value;
+  if (subject) Compose.subject = subject.value;
+  if (body) Compose.body = body.value;
+}
+
+function toggleComposeCc() {
+  syncComposeFromDom();
+  Compose.showCc = !Compose.showCc;
+  renderComposeDock();
+}
+
+function toggleComposeBcc() {
+  syncComposeFromDom();
+  Compose.showBcc = !Compose.showBcc;
+  renderComposeDock();
+}
+
+function renderComposeDock() {
+  let dock = document.getElementById('compose-dock');
+  if (!Compose.open || !S.me || !S.sendEnabled) {
+    dock?.remove();
+    return;
+  }
+  const mailboxOptions = S.mailboxes.map(m =>
+    `<option value="${m.id}" ${m.id === Compose.mailboxId ? 'selected' : ''}>${esc(m.address)}</option>`
+  ).join('');
+  const attachChips = Compose.attachments.map((a, i) =>
+    `<span class="compose-attach-chip" title="${esc(a.filename)}">${esc(a.filename)} (${formatBytes(a.size)})
+      <button type="button" onclick="removeComposeAttachment(${i})" aria-label="Xoá">×</button></span>`
+  ).join('');
+  const html = `
+    <div class="compose-dock ${Compose.minimized ? 'minimized' : ''} ${Compose.maximized ? 'maximized' : ''}" id="compose-dock" role="dialog" aria-label="Soạn thư">
+      <div class="compose-titlebar" ondblclick="maximizeCompose()">
+        <span class="compose-title">${esc(Compose.subject.trim() || 'Thư mới')}</span>
+        <div class="compose-title-actions">
+          <button type="button" class="compose-win-btn" onclick="minimizeCompose()" title="${Compose.minimized ? 'Mở rộng' : 'Thu nhỏ'}">─</button>
+          <button type="button" class="compose-win-btn" onclick="maximizeCompose()" title="${Compose.maximized ? 'Thu nhỏ cửa sổ' : 'Phóng to'}">${Compose.maximized ? '❐' : '□'}</button>
+          <button type="button" class="compose-win-btn" onclick="closeCompose()" title="Đóng">×</button>
+        </div>
+      </div>
+      ${Compose.minimized ? '' : `
+      <div class="compose-fields">
+        <div class="compose-row">
+          <label>Từ</label>
+          <select id="compose-from" class="compose-input" onchange="Compose.mailboxId=Number(this.value)">${mailboxOptions}</select>
+        </div>
+        <div class="compose-row">
+          <label>Đến</label>
+          <input id="compose-to" class="compose-input" value="${esc(Compose.to)}" placeholder="nguoi-nhan@example.com" autocomplete="email"
+                 oninput="Compose.to=this.value">
+          <div class="compose-cc-toggles">
+            ${!Compose.showCc ? `<button type="button" class="compose-link" onclick="toggleComposeCc()">Cc</button>` : ''}
+            ${!Compose.showBcc ? `<button type="button" class="compose-link" onclick="toggleComposeBcc()">Bcc</button>` : ''}
+          </div>
+        </div>
+        ${Compose.showCc ? `<div class="compose-row"><label>Cc</label>
+          <input id="compose-cc" class="compose-input" value="${esc(Compose.cc)}" oninput="Compose.cc=this.value" placeholder="cc@example.com"></div>` : ''}
+        ${Compose.showBcc ? `<div class="compose-row"><label>Bcc</label>
+          <input id="compose-bcc" class="compose-input" value="${esc(Compose.bcc)}" oninput="Compose.bcc=this.value" placeholder="bcc@example.com"></div>` : ''}
+        <div class="compose-row">
+          <label>Chủ đề</label>
+          <input id="compose-subject" class="compose-input" value="${esc(Compose.subject)}" placeholder="Chủ đề"
+                 oninput="Compose.subject=this.value;document.querySelector('.compose-title')&&(document.querySelector('.compose-title').textContent=this.value.trim()||'Thư mới')">
+        </div>
+      </div>
+      <textarea id="compose-body" class="compose-body" placeholder="Soạn nội dung thư…" oninput="Compose.body=this.value">${esc(Compose.body)}</textarea>
+      ${attachChips ? `<div class="compose-attach-list">${attachChips}</div>` : ''}
+      <div class="compose-toolbar">
+        <button type="button" class="btn primary compose-send-btn" ${Compose.sending ? 'disabled' : ''} onclick="submitCompose()">
+          ${Compose.sending ? 'Đang gửi…' : 'Gửi'}
+        </button>
+        <label class="compose-attach-btn" title="Đính kèm tệp">
+          ${icon('paperclip', 18)}
+          <input type="file" multiple hidden onchange="onComposeFiles(this)">
+        </label>
+        <button type="button" class="btn ghost small" onclick="closeCompose()" title="Huỷ">Huỷ</button>
+      </div>`}
+    </div>`;
+  if (dock) {
+    dock.outerHTML = LH(html);
+  } else {
+    document.body.insertAdjacentHTML('beforeend', LH(html));
+  }
+}
+
+async function onComposeFiles(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  for (const file of files) {
+    if (Compose.attachments.length >= 10) {
+      toast('Tối đa 10 tệp đính kèm.', false);
+      break;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      toast(`Tệp ${file.name} vượt quá 3 MB.`, false);
+      continue;
+    }
+    try {
+      const content = await fileToBase64(file);
+      Compose.attachments.push({
+        filename: file.name,
+        type: file.type || 'application/octet-stream',
+        content,
+        size: file.size,
+      });
+    } catch (e) {
+      toast(`Không đọc được ${file.name}: ${e.message}`);
+    }
+  }
+  renderComposeDock();
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const idx = result.indexOf(',');
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error || new Error('read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeComposeAttachment(index) {
+  Compose.attachments.splice(index, 1);
+  renderComposeDock();
+}
+
+async function submitCompose() {
+  if (Compose.sending) return;
+  syncComposeFromDom();
+  if (!Compose.mailboxId) {
+    toast('Chọn mailbox người gửi (Từ).', false);
+    return;
+  }
+  if (!Compose.to.trim()) {
+    toast('Nhập ít nhất một địa chỉ Đến.', false);
+    return;
+  }
+  if (!Compose.subject.trim()) {
+    toast('Chủ đề không được để trống.', false);
+    return;
+  }
+  if (!Compose.body.trim() && !Compose.attachments.length) {
+    toast('Nội dung thư trống.', false);
+    return;
+  }
+  Compose.sending = true;
+  renderComposeDock();
+  try {
+    const payload = {
+      to: Compose.to,
+      subject: Compose.subject,
+      text: Compose.body,
+    };
+    if (Compose.cc.trim()) payload.cc = Compose.cc;
+    if (Compose.bcc.trim()) payload.bcc = Compose.bcc;
+    if (Compose.attachments.length) {
+      payload.attachments = Compose.attachments.map(a => ({
+        filename: a.filename,
+        type: a.type,
+        content: a.content,
+      }));
+    }
+    await api(`/api/mailboxes/${Compose.mailboxId}/send`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    toast('Đã gửi thư.', true);
+    Compose.open = false;
+    Compose.attachments = [];
+    document.getElementById('compose-dock')?.remove();
+    if (S.view === 'sent') loadSent();
+  } catch (e) {
+    toast(e.message || 'Gửi thất bại');
+    Compose.sending = false;
+    renderComposeDock();
   }
 }
 

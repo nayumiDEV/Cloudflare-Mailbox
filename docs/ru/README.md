@@ -1,17 +1,18 @@
 # OTP Inbox
 
-**Язык:** [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Русский](README.ru.md)
+**Язык:** [English](../../README.md) · [Tiếng Việt](../vi/README.md) · [中文](../zh/README.md) · [Русский](README.md)
 
 Самостоятельно размещаемый **catch-all почтовый ящик** с автоматическим извлечением OTP, многопользовательским контролем доступа, регистрацией по реферальным кодам и API для разработчиков.
 
 Входящая почта принимается [Cloudflare Email Routing](https://developers.cloudflare.com/email-routing/) Worker и сохраняется бэкендом на FastAPI (SQLite или PostgreSQL). Web-интерфейс в стиле Gmail позволяет просматривать почтовые ящики, искать сообщения и управлять правилами маршрутизации.
 
 [![CI](https://github.com/nayumiDEV/Cloudflare-Mailbox/actions/workflows/ci.yml/badge.svg)](https://github.com/nayumiDEV/Cloudflare-Mailbox/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 
 ## Возможности
 
 - **Catch-all приём** через Cloudflare Worker → `POST /api/ingest`
+- **Исходящая почта** (опционально) через Cloudflare Email Sending + Compose как в Gmail — [en/SEND.md](../en/SEND.md)
 - **Извлечение OTP** из темы/тела с фильтрацией ложных срабатываний
 - **Почтовые ящики и правила маршрутизации** (точные, по префиксу, домену, regex, catch-all)
 - **Многопользовательский ACL** — владелец, общий доступ, переопределения администратора
@@ -44,7 +45,7 @@ Web UI  (static/)  +  REST API  (/api/*)
 
 **Требования:** Python 3.11+, Node 18+ (только для тестов фронтенда)
 
-Полное пошаговое руководство: **[docs/ru/SETUP.md](docs/ru/SETUP.md)**.
+Полное пошаговое руководство: **[docs/ru/SETUP.md](../ru/SETUP.md)**.
 
 ```bash
 python -m venv .venv
@@ -69,18 +70,18 @@ python -m pytest tests -q
 
 ## Развёртывание в production
 
-Смотрите **[docs/ru/DEPLOY.md](docs/ru/DEPLOY.md)** для получения информации о:
+Смотрите **[docs/ru/DEPLOY.md](../ru/DEPLOY.md)** для получения информации о:
 
 - Koyeb (SQLite-том или управляемый PostgreSQL)
 - Cloudflare Email Routing + секреты Worker
 - Настройка ресурсов / хранения данных
 - Переключатели реферальной функции
 
-Точка входа Worker: [`worker/`](worker/) (`wrangler.toml` + `worker.js`).
+Точка входа Worker: [`worker/`](../../worker/) (`wrangler.toml` + `worker.js`).
 
 ## Конфигурация
 
-Скопируйте [`.env.example`](.env.example). Важные переменные:
+Скопируйте [`.env.example`](../../.env.example). Важные переменные:
 
 | Переменная | Назначение |
 | --- | --- |
@@ -93,7 +94,7 @@ python -m pytest tests -q
 
 ## API
 
-Полный REST-справочник: **[docs/ru/API.md](docs/ru/API.md)**
+Полный REST-справочник: **[docs/ru/API.md](../ru/API.md)**
 
 Интерактивный Swagger UI: `GET /docs` на работающем экземпляре.
 
@@ -124,15 +125,15 @@ deploy/
 
 ## Безопасность
 
-- Сообщайте об уязвимостях конфиденциально — см. [SECURITY.md](SECURITY.md)
+- Сообщайте об уязвимостях конфиденциально — см. [SECURITY.md](../../SECURITY.md)
 - Никогда не коммитьте `.env`, `data/*.db` или секреты Wrangler
 - Держите регистрацию и генерацию реферальных кодов отключёнными до тех пор, пока они не нужны
 
 ## Участие в разработке
 
-Смотрите [CONTRIBUTING.md](CONTRIBUTING.md). Пожалуйста, соблюдайте
-[Кодекс поведения](CODE_OF_CONDUCT.md).
+Смотрите [CONTRIBUTING.md](../../CONTRIBUTING.md). Пожалуйста, соблюдайте
+[Кодекс поведения](../../CODE_OF_CONDUCT.md).
 
 ## Лицензия
 
-[MIT](LICENSE)
+[MIT](../../LICENSE)

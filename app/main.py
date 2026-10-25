@@ -20,7 +20,9 @@ from email.utils import parseaddr, parsedate_to_datetime
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, NamedTuple, Optional
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urljoin, urlparse
+from urllib.request import Request as UrlRequest, urlopen
 
 try:
     from dotenv import load_dotenv
@@ -62,6 +64,14 @@ if not USING_POSTGRES:
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me-now")
 WORKER_INGEST_TOKEN = os.getenv("WORKER_INGEST_TOKEN", "change-this-worker-token")
+# Outbound send via the Cloudflare Worker /send endpoint (Email Service binding).
+# Example: https://otp-inbox-worker.<account>.workers.dev/send
+WORKER_SEND_URL = (os.getenv("WORKER_SEND_URL") or "").strip().rstrip("/")
+SEND_ENABLED = bool(WORKER_SEND_URL)
+MAX_SEND_RECIPIENTS = int(os.getenv("MAX_SEND_RECIPIENTS", "50"))
+MAX_SEND_ATTACHMENT_BYTES = int(os.getenv("MAX_SEND_ATTACHMENT_BYTES", str(3 * 1024 * 1024)))
+MAX_SEND_ATTACHMENTS = int(os.getenv("MAX_SEND_ATTACHMENTS", "10"))
+MAX_SEND_BODY_CHARS = int(os.getenv("MAX_SEND_BODY_CHARS", "200000"))
 SESSION_DAYS = int(os.getenv("SESSION_DAYS", "7"))
 MAX_EMAIL_BYTES = int(os.getenv("MAX_EMAIL_BYTES", str(10 * 1024 * 1024)))
 MAX_BODY_CHARS = int(os.getenv("MAX_BODY_CHARS", "200000"))
@@ -2221,6 +2231,7 @@ async def health() -> dict[str, Any]:
             "search": "fts" if FTS_AVAILABLE else "like",
             "registration": registration_open(conn),
             "code_generation": code_generation_open(conn),
+            "send_enabled": SEND_ENABLED,
         }
 
 
@@ -2321,6 +2332,7 @@ async def me(request: Request) -> dict[str,Any]:
         "auth_via": "api_key" if session is None else "session",
         "referral": referral,
         "registration_open": registration_open_now,
+        "send_enabled": SEND_ENABLED,
     }
 
 
@@ -2335,6 +2347,7 @@ async def auth_config() -> dict[str,Any]:
         return {
             "registration_open": registration_open(conn),
             "app": APP_NAME,
+            "send_enabled": SEND_ENABLED,
         }
 
 
@@ -2578,6 +2591,350 @@ async def ingest(request: Request) -> JSONResponse:
             received_at=received_at, otp=parsed["otp"], subject=subject,
         )
     return JSONResponse({"ok":True,"message_id":message_id,"mailbox":envelope_to,"otp":parsed["otp"]},status_code=201)
+
+
+# ------------------------ outbound send ----------------------
+
+_EMAIL_SPLIT_RE = re.compile(r"[,\n;]+")
+
+
+def parse_address_list(value: Any, *, limit: int) -> list[str]:
+    """Normalize To/Cc/Bcc into a de-duplicated list of bare email addresses."""
+    if value is None:
+        return []
+    raw_items: list[str] = []
+    if isinstance(value, list):
+        for item in value:
+            if isinstance(item, dict):
+                raw_items.append(str(item.get("email") or item.get("address") or ""))
+            else:
+                raw_items.append(str(item or ""))
+    else:
+        raw_items.append(str(value or ""))
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for chunk in raw_items:
+        for part in _EMAIL_SPLIT_RE.split(chunk):
+            _name, addr = parseaddr(part.strip())
+            addr = normalize_email(addr or part.strip())
+            if not addr or not valid_email(addr):
+                continue
+            if addr in seen:
+                continue
+            seen.add(addr)
+            out.append(addr)
+            if len(out) > limit:
+                raise HTTPException(status_code=400, detail=f"Too many recipients (max {limit})")
+    return out
+
+
+def text_to_simple_html(text: str) -> str:
+    return "<pre style=\"font-family:inherit;white-space:pre-wrap;margin:0\">" + html_lib.escape(text) + "</pre>"
+
+
+def call_worker_send(payload: dict[str, Any]) -> dict[str, Any]:
+    """POST JSON to the Cloudflare Worker /send endpoint."""
+    if not SEND_ENABLED or not WORKER_SEND_URL:
+        raise HTTPException(
+            status_code=503,
+            detail="Outbound email is not configured. Set WORKER_SEND_URL to the Worker /send endpoint.",
+        )
+    body = json.dumps(payload).encode("utf-8")
+    req = UrlRequest(
+        WORKER_SEND_URL,
+        data=body,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "X-Worker-Token": WORKER_INGEST_TOKEN,
+            "User-Agent": "OTP-Inbox-Send/1.0",
+        },
+    )
+    try:
+        with urlopen(req, timeout=45) as resp:
+            raw = resp.read().decode("utf-8", errors="replace")
+            data = json.loads(raw) if raw else {}
+            if not isinstance(data, dict):
+                raise HTTPException(status_code=502, detail="Invalid response from send worker")
+            return data
+    except HTTPError as exc:
+        err_body = ""
+        try:
+            err_body = exc.read().decode("utf-8", errors="replace")
+            parsed = json.loads(err_body) if err_body else {}
+        except Exception:
+            parsed = {}
+        detail = parsed.get("error") or err_body or exc.reason or "Send worker error"
+        code = parsed.get("code") or ""
+        status = 429 if exc.code == 429 else (400 if 400 <= exc.code < 500 else 502)
+        raise HTTPException(status_code=status, detail=f"{detail}" + (f" [{code}]" if code else "")) from exc
+    except URLError as exc:
+        raise HTTPException(status_code=502, detail=f"Cannot reach send worker: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="Send worker timed out") from exc
+
+
+def normalize_send_attachments(items: Any) -> list[dict[str, Any]]:
+    if not items:
+        return []
+    if not isinstance(items, list):
+        raise HTTPException(status_code=400, detail="attachments must be an array")
+    if len(items) > MAX_SEND_ATTACHMENTS:
+        raise HTTPException(status_code=400, detail=f"Too many attachments (max {MAX_SEND_ATTACHMENTS})")
+    out: list[dict[str, Any]] = []
+    total = 0
+    for item in items:
+        if not isinstance(item, dict):
+            raise HTTPException(status_code=400, detail="Invalid attachment object")
+        filename = clean_text(item.get("filename") or "attachment", 200) or "attachment"
+        content_type = clean_text(item.get("type") or item.get("content_type") or "application/octet-stream", 120)
+        b64 = item.get("content") or item.get("content_base64") or ""
+        if not isinstance(b64, str) or not b64.strip():
+            raise HTTPException(status_code=400, detail=f"Attachment {filename} has empty content")
+        try:
+            raw = base64.b64decode(b64, validate=False)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Attachment {filename} is not valid base64") from exc
+        if len(raw) > MAX_SEND_ATTACHMENT_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Attachment {filename} exceeds {MAX_SEND_ATTACHMENT_BYTES} bytes",
+            )
+        total += len(raw)
+        if total > MAX_SEND_ATTACHMENT_BYTES * 2:
+            raise HTTPException(status_code=413, detail="Total attachment size too large")
+        out.append({
+            "filename": filename,
+            "type": content_type or "application/octet-stream",
+            "content": b64.strip(),
+            "disposition": "inline" if item.get("disposition") == "inline" else "attachment",
+            "contentId": clean_text(item.get("contentId") or item.get("content_id") or "", 200) or None,
+        })
+    return out
+
+
+@app.post("/api/mailboxes/{mailbox_id}/send")
+async def send_from_mailbox(mailbox_id: int, request: Request, payload: dict[str, Any]) -> dict[str, Any]:
+    """Send an email *from* a mailbox the caller can access (Gmail-style compose).
+
+    Delivery is delegated to the Cloudflare Worker ``POST /send`` endpoint which
+    uses the Email Service ``send_email`` binding. The From address is always the
+    mailbox address — callers cannot spoof another identity.
+    """
+    auth = require_auth(request)
+    if auth.via == "session":
+        require_csrf(request, auth.session)
+    if not SEND_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail="Outbound email is not configured. Set WORKER_SEND_URL after enabling Cloudflare Email Sending.",
+        )
+
+    to_addrs = parse_address_list(payload.get("to"), limit=MAX_SEND_RECIPIENTS)
+    cc_addrs = parse_address_list(payload.get("cc"), limit=MAX_SEND_RECIPIENTS)
+    bcc_addrs = parse_address_list(payload.get("bcc"), limit=MAX_SEND_RECIPIENTS)
+    if not to_addrs:
+        raise HTTPException(status_code=400, detail="At least one valid To address is required")
+    if len(to_addrs) + len(cc_addrs) + len(bcc_addrs) > MAX_SEND_RECIPIENTS:
+        raise HTTPException(status_code=400, detail=f"Too many recipients (max {MAX_SEND_RECIPIENTS})")
+
+    subject = clean_text(payload.get("subject"), 998)
+    if not subject:
+        raise HTTPException(status_code=400, detail="Subject is required")
+
+    body_text = str(payload.get("text") or payload.get("body") or "")
+    body_html = str(payload.get("html") or "")
+    if len(body_text) > MAX_SEND_BODY_CHARS or len(body_html) > MAX_SEND_BODY_CHARS:
+        raise HTTPException(status_code=400, detail="Message body is too long")
+    if not body_text.strip() and not body_html.strip():
+        raise HTTPException(status_code=400, detail="Message body is required")
+    if not body_html.strip() and body_text.strip():
+        body_html = text_to_simple_html(body_text)
+    if not body_text.strip() and body_html.strip():
+        body_text = html_to_text(body_html)
+
+    attachments = normalize_send_attachments(payload.get("attachments"))
+
+    with db() as conn:
+        mailbox = mailbox_by_id(conn, mailbox_id)
+        if not mailbox:
+            raise HTTPException(status_code=404, detail="Mailbox not found")
+        if not has_access(conn, auth.user, mailbox_id):
+            raise HTTPException(status_code=403, detail="No access to this mailbox")
+        from_addr = mailbox["address"]
+
+    worker_payload: dict[str, Any] = {
+        "from": from_addr,
+        "to": to_addrs,
+        "subject": subject,
+        "text": body_text,
+        "html": body_html,
+        "reply_to": from_addr,
+    }
+    if cc_addrs:
+        worker_payload["cc"] = cc_addrs
+    if bcc_addrs:
+        worker_payload["bcc"] = bcc_addrs
+    if attachments:
+        worker_payload["attachments"] = attachments
+
+    sent_at = now_iso()
+    size_bytes = len(body_text.encode("utf-8")) + len(body_html.encode("utf-8"))
+    pending_exc: HTTPException | None = None
+    cf_id = ""
+    try:
+        result = call_worker_send(worker_payload)
+        cf_id = str(result.get("messageId") or result.get("message_id") or "")
+        status = "sent"
+        error = ""
+    except HTTPException as exc:
+        pending_exc = exc
+        status = "failed"
+        error = str(exc.detail)
+        # Persist the failed attempt, then re-raise after the DB transaction commits.
+
+    with db() as conn:
+        cur = conn.execute(
+            """INSERT INTO outbound_messages(
+                   mailbox_id,sent_by_user_id,to_addrs,cc_addrs,bcc_addrs,subject,
+                   body_text,body_html,cf_message_id,status,error,size_bytes,has_attachments,sent_at)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                mailbox_id, auth.user["id"],
+                json.dumps(to_addrs), json.dumps(cc_addrs), json.dumps(bcc_addrs),
+                subject, body_text, body_html, cf_id, status, error,
+                size_bytes, 1 if attachments else 0, sent_at,
+            ),
+        )
+        out_id = getattr(cur, "lastrowid", None)
+        if not out_id:
+            row = conn.execute(
+                "SELECT id FROM outbound_messages WHERE mailbox_id=? AND sent_at=? ORDER BY id DESC LIMIT 1",
+                (mailbox_id, sent_at),
+            ).fetchone()
+            out_id = row["id"] if row else None
+        action = "send_failed" if status == "failed" else "send"
+        detail = f"id={out_id}; to={','.join(to_addrs)}; subject={subject[:80]}"
+        if status == "failed":
+            detail += f"; err={error[:200]}"
+        else:
+            detail += f"; cf={cf_id}"
+        add_audit(conn, auth.user["id"], action, mailbox_id, None, detail)
+
+    if pending_exc is not None:
+        raise pending_exc
+
+    return {
+        "ok": True,
+        "id": out_id,
+        "mailbox": from_addr,
+        "cf_message_id": cf_id,
+        "status": "sent",
+        "to": to_addrs,
+        "cc": cc_addrs,
+        "bcc": bcc_addrs,
+        "subject": subject,
+    }
+
+
+@app.get("/api/sent")
+async def list_sent(request: Request, mailbox_id: int = 0, page: int = 1, page_size: int = 30) -> dict[str, Any]:
+    auth = require_auth(request)
+    page = max(1, int(page or 1))
+    page_size = min(100, max(1, int(page_size or 30)))
+    offset = (page - 1) * page_size
+    with db() as conn:
+        if mailbox_id:
+            if not has_access(conn, auth.user, mailbox_id):
+                raise HTTPException(status_code=403, detail="No access to this mailbox")
+            total = conn.execute(
+                "SELECT COUNT(*) c FROM outbound_messages WHERE mailbox_id=?", (mailbox_id,)
+            ).fetchone()["c"]
+            rows = conn.execute(
+                """SELECT o.id,o.mailbox_id,m.address mailbox_address,o.to_addrs,o.cc_addrs,o.bcc_addrs,
+                          o.subject,o.status,o.error,o.cf_message_id,o.has_attachments,o.size_bytes,o.sent_at,
+                          u.username sent_by
+                   FROM outbound_messages o
+                   JOIN mailboxes m ON m.id=o.mailbox_id
+                   LEFT JOIN users u ON u.id=o.sent_by_user_id
+                   WHERE o.mailbox_id=?
+                   ORDER BY o.sent_at DESC, o.id DESC
+                   LIMIT ? OFFSET ?""",
+                (mailbox_id, page_size, offset),
+            ).fetchall()
+        else:
+            ids = user_mailbox_ids(conn, auth.user)
+            if auth.user["role"] != "admin" and not ids:
+                return {"items": [], "total": 0, "page": page, "page_size": page_size}
+            if auth.user["role"] == "admin":
+                total = conn.execute("SELECT COUNT(*) c FROM outbound_messages").fetchone()["c"]
+                rows = conn.execute(
+                    """SELECT o.id,o.mailbox_id,m.address mailbox_address,o.to_addrs,o.cc_addrs,o.bcc_addrs,
+                              o.subject,o.status,o.error,o.cf_message_id,o.has_attachments,o.size_bytes,o.sent_at,
+                              u.username sent_by
+                       FROM outbound_messages o
+                       JOIN mailboxes m ON m.id=o.mailbox_id
+                       LEFT JOIN users u ON u.id=o.sent_by_user_id
+                       ORDER BY o.sent_at DESC, o.id DESC
+                       LIMIT ? OFFSET ?""",
+                    (page_size, offset),
+                ).fetchall()
+            else:
+                placeholders = ",".join("?" * len(ids))
+                params = list(ids)
+                total = conn.execute(
+                    f"SELECT COUNT(*) c FROM outbound_messages WHERE mailbox_id IN ({placeholders})",
+                    params,
+                ).fetchone()["c"]
+                rows = conn.execute(
+                    f"""SELECT o.id,o.mailbox_id,m.address mailbox_address,o.to_addrs,o.cc_addrs,o.bcc_addrs,
+                               o.subject,o.status,o.error,o.cf_message_id,o.has_attachments,o.size_bytes,o.sent_at,
+                               u.username sent_by
+                        FROM outbound_messages o
+                        JOIN mailboxes m ON m.id=o.mailbox_id
+                        LEFT JOIN users u ON u.id=o.sent_by_user_id
+                        WHERE o.mailbox_id IN ({placeholders})
+                        ORDER BY o.sent_at DESC, o.id DESC
+                        LIMIT ? OFFSET ?""",
+                    (*params, page_size, offset),
+                ).fetchall()
+
+        items = []
+        for r in rows:
+            d = dict(r)
+            for key in ("to_addrs", "cc_addrs", "bcc_addrs"):
+                try:
+                    d[key] = json.loads(d.get(key) or "[]")
+                except Exception:
+                    d[key] = []
+            items.append(d)
+        return {"items": items, "total": total, "page": page, "page_size": page_size}
+
+
+@app.get("/api/sent/{sent_id}")
+async def get_sent(sent_id: int, request: Request) -> dict[str, Any]:
+    auth = require_auth(request)
+    with db() as conn:
+        row = conn.execute(
+            """SELECT o.*, m.address mailbox_address, u.username sent_by
+               FROM outbound_messages o
+               JOIN mailboxes m ON m.id=o.mailbox_id
+               LEFT JOIN users u ON u.id=o.sent_by_user_id
+               WHERE o.id=?""",
+            (sent_id,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Sent message not found")
+        if not has_access(conn, auth.user, row["mailbox_id"]):
+            raise HTTPException(status_code=403, detail="No access")
+        d = dict(row)
+        for key in ("to_addrs", "cc_addrs", "bcc_addrs"):
+            try:
+                d[key] = json.loads(d.get(key) or "[]")
+            except Exception:
+                d[key] = []
+        return d
 
 
 # ----------------------- dashboard ---------------------------

@@ -1,17 +1,18 @@
 # OTP Inbox
 
-**语言：** [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Русский](README.ru.md)
+**语言：** [English](../../README.md) · [Tiếng Việt](../vi/README.md) · [中文](README.md) · [Русский](../ru/README.md)
 
 自托管的 **catch-all 邮件收件箱**，具备自动 OTP 提取、多用户访问控制、邀请码注册以及开发者 API 功能。
 
 收到的邮件由 [Cloudflare Email Routing](https://developers.cloudflare.com/email-routing/) Worker 接收，并由 FastAPI 后端（SQLite 或 PostgreSQL）存储。受 Gmail 启发的 Web UI 让你轻松浏览邮箱、搜索邮件并管理路由规则。
 
 [![CI](https://github.com/nayumiDEV/Cloudflare-Mailbox/actions/workflows/ci.yml/badge.svg)](https://github.com/nayumiDEV/Cloudflare-Mailbox/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 
 ## 功能特性
 
 - **Catch-all 邮件接收** 通过 Cloudflare Worker → `POST /api/ingest`
+- **外发邮件**（可选）Cloudflare Email Sending + Gmail 风格撰写 — [en/SEND.md](../en/SEND.md)
 - **OTP 自动提取** 从主题/正文中提取，带误报过滤
 - **邮箱与路由规则**（精确、前缀、域名、正则、catch-all）
 - **多用户访问控制** — 所有者、共享访问、管理员覆盖
@@ -44,7 +45,7 @@ Web UI  (static/)  +  REST API  (/api/*)
 
 **要求：** Python 3.11+，Node 18+（仅用于前端测试）
 
-完整的逐步指南请参阅 **[docs/zh/SETUP.md](docs/zh/SETUP.md)**。
+完整的逐步指南请参阅 **[docs/zh/SETUP.md](../zh/SETUP.md)**。
 
 ```bash
 python -m venv .venv
@@ -69,18 +70,18 @@ python -m pytest tests -q
 
 ## 生产部署
 
-参阅 **[docs/zh/DEPLOY.md](docs/zh/DEPLOY.md)**，内容包括：
+参阅 **[docs/zh/DEPLOY.md](../zh/DEPLOY.md)**，内容包括：
 
 - Koyeb（SQLite 卷或托管 PostgreSQL）
 - Cloudflare Email Routing + Worker 密钥配置
 - 资源 / 数据保留调优
 - 邀请功能开关
 
-Worker 入口：[`worker/`](worker/)（`wrangler.toml` + `worker.js`）。
+Worker 入口：[`worker/`](../../worker/)（`wrangler.toml` + `worker.js`）。
 
 ## 配置
 
-复制 [`.env.example`](.env.example)。重要变量：
+复制 [`.env.example`](../../.env.example)。重要变量：
 
 | 变量 | 用途 |
 | --- | --- |
@@ -93,7 +94,7 @@ Worker 入口：[`worker/`](worker/)（`wrangler.toml` + `worker.js`）。
 
 ## API
 
-完整 REST 参考：**[docs/zh/API.md](docs/zh/API.md)**
+完整 REST 参考：**[docs/zh/API.md](../zh/API.md)**
 
 交互式 Swagger UI：在运行中的实例上访问 `GET /docs`。
 
@@ -124,15 +125,15 @@ deploy/
 
 ## 安全
 
-- 私下报告漏洞 — 参见 [SECURITY.md](SECURITY.md)
+- 私下报告漏洞 — 参见 [SECURITY.md](../../SECURITY.md)
 - 永远不要提交 `.env`、`data/*.db` 或 Wrangler 密钥
 - 在需要之前保持注册和邀请码生成关闭
 
 ## 贡献
 
-参见 [CONTRIBUTING.md](CONTRIBUTING.md)。请遵守
-[行为准则](CODE_OF_CONDUCT.md)。
+参见 [CONTRIBUTING.md](../../CONTRIBUTING.md)。请遵守
+[行为准则](../../CODE_OF_CONDUCT.md)。
 
 ## 许可证
 
-[MIT](LICENSE)
+[MIT](../../LICENSE)

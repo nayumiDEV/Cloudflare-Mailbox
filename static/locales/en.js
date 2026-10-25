@@ -74,6 +74,8 @@ window.LOCALES.en = {
 
   /* ── sidebar ─────────────────────────────────────────────── */
   'sidebar.createMailbox':       'Create Mailbox',
+  'sidebar.compose':             'Compose',
+  'sidebar.sent':                'Sent',
   'sidebar.closeMenu':           'Close menu',
   'sidebar.searchMailbox':       'Find mailbox…',
   'sidebar.searchAriaLabel':     'Find mailbox',
@@ -84,6 +86,28 @@ window.LOCALES.en = {
   'sidebar.accountBtn':          'Account',
   'sidebar.logoutBtn':           'Sign Out',
   'sidebar.selectMailbox':       'Select {address}',
+
+  /* ── compose ─────────────────────────────────────────────── */
+  'compose.titleNew':            'New Message',
+  'compose.from':                'From',
+  'compose.to':                  'To',
+  'compose.cc':                  'Cc',
+  'compose.bcc':                 'Bcc',
+  'compose.subject':             'Subject',
+  'compose.bodyPlaceholder':     'Compose email…',
+  'compose.send':                'Send',
+  'compose.sending':             'Sending…',
+  'compose.discard':             'Discard',
+  'compose.cancel':              'Cancel',
+  'compose.attach':              'Attach file',
+  'compose.sentOk':              'Message sent.',
+  'compose.discardConfirm':      'Discard draft and close the compose window?',
+  'compose.notEnabled':          'Outbound email is not enabled. Configure WORKER_SEND_URL and Cloudflare Email Sending.',
+  'compose.noMailbox':           'You have no mailbox to send from.',
+  'compose.reply':               'Reply',
+  'compose.emptySent':           'No sent messages yet.',
+  'compose.pickSent':            'Select a sent message to view',
+  'compose.failed':              'Failed',
 
   /* ── inbox ───────────────────────────────────────────────── */
   'inbox.selectAll':             'Select all messages on this page',

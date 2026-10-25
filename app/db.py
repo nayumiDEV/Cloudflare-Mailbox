@@ -143,7 +143,7 @@ _SQLITE_ONLY = [
 _PG_PRIMARY_KEY = {
     "users", "mailboxes", "messages", "routing_rules", "sessions",
     "notifications", "audit_logs", "attachments", "referral_codes",
-    "registrations",
+    "registrations", "outbound_messages",
 }
 
 

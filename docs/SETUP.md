@@ -358,6 +358,26 @@ On first boot with an empty DB the app seeds `example.com` (or `DEFAULT_MAIL_DOM
 
 If Worker returns reject / timeout: API is down, sleeping, or `WORKER_INGEST_TOKEN` / `APP_INGEST_URL` mismatch.
 
+### 5.5 Outbound send (optional — Workers Paid)
+
+To let users **compose and send** from a mailbox (Gmail-like UI):
+
+1. Upgrade to **Workers Paid** (required for arbitrary recipients)
+2. Dashboard → **Email Service → Email Sending → Onboard Domain** (same domain as Routing)
+3. Confirm `worker/wrangler.toml` has `[[send_email]] name = "EMAIL"` and redeploy
+4. Set on the API:
+
+```bash
+WORKER_SEND_URL=https://<your-worker>.workers.dev/send
+```
+
+5. Restart API → `/health` should show `"send_enabled": true`
+6. UI: **Compose** + **Sent**; API: `POST /api/mailboxes/{id}/send`
+
+Full guide (pricing, limits, curl, troubleshooting): **[en/SEND.md](en/SEND.md)** · **[vi/SEND.md](vi/SEND.md)**.
+
+Without `WORKER_SEND_URL` the inbox still works; send features stay hidden.
+
 ---
 
 ## 6. First-admin checklist
@@ -369,6 +389,7 @@ If Worker returns reject / timeout: API is down, sleeping, or `WORKER_INGEST_TOK
 - [ ] Left registration **off** until you intentionally open referral signup
 - [ ] Verified `/health` returns `"status":"ok"`
 - [ ] Language switcher works (EN / VI / 中文 / RU)
+- [ ] (Optional) Email Sending onboarded + `WORKER_SEND_URL` set if you need outbound mail
 
 ---
 
@@ -402,6 +423,8 @@ See [`.env.example`](../.env.example) for the complete list with comments. Criti
 | `REFERRAL_CODE_GENERATION` | no | Default off |
 | `AUTO_DELETE_ENABLED` / `AUTO_DELETE_DAYS` | no | Background retention |
 | `STORE_RAW_MIME` | no | `0` saves disk (recommended on small volumes) |
+| `WORKER_SEND_URL` | no | Worker `…/send` URL; enables Compose / Sent |
+| `MAX_SEND_*` | no | Recipient / attachment / body caps for outbound |
 
 ---
 
@@ -417,6 +440,8 @@ See [`.env.example`](../.env.example) for the complete list with comments. Criti
 | Registration form missing | Feature off | Enable in admin UI or set `REGISTRATION_ENABLED=1` then restart (first boot) / toggle in dashboard |
 | ImportError `app.main` | Wrong working directory | Run uvicorn from repo root |
 | Tests touch real DB | Env not isolated | Suite uses temp DB; don't set `DATABASE_PATH` to production in the same shell |
+| No Compose button / `send_enabled: false` | `WORKER_SEND_URL` unset | See [SEND.md](en/SEND.md) |
+| Send returns `E_SENDER_NOT_VERIFIED` | Domain not onboarded for Email Sending | Onboard under Email Service → Email Sending |
 
 ---
 

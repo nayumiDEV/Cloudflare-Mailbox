@@ -1,17 +1,18 @@
 # OTP Inbox
 
-**Ngôn ngữ:** [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Русский](README.ru.md)
+**Ngôn ngữ:** [English](../../README.md) · [Tiếng Việt](README.md) · [中文](../zh/README.md) · [Русский](../ru/README.md)
 
 **Catch-all email inbox** tự lưu trữ với tính năng tự động trích xuất OTP, kiểm soát truy cập đa người dùng, đăng ký có mã giới thiệu, và Developer API.
 
 Email đến được nhận bởi [Cloudflare Email Routing](https://developers.cloudflare.com/email-routing/) Worker và lưu trữ bởi backend FastAPI (SQLite hoặc PostgreSQL). Giao diện web theo phong cách Gmail giúp bạn duyệt mailbox, tìm kiếm tin nhắn và quản lý quy tắc định tuyến.
 
 [![CI](https://github.com/nayumiDEV/Cloudflare-Mailbox/actions/workflows/ci.yml/badge.svg)](https://github.com/nayumiDEV/Cloudflare-Mailbox/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 
 ## Tính năng
 
 - **Catch-all ingest** qua Cloudflare Worker → `POST /api/ingest`
+- **Gửi thư đi** (tuỳ chọn) qua Cloudflare Email Sending + UI soạn thư kiểu Gmail — [SEND.md](SEND.md)
 - **Trích xuất OTP** từ tiêu đề/nội dung với lọc false-positive
 - **Mailbox & quy tắc định tuyến** (chính xác, tiền tố, domain, regex, catch-all)
 - **Kiểm soát truy cập đa người dùng** — owner, shared access, admin overrides
@@ -44,7 +45,7 @@ Web UI  (static/)  +  REST API  (/api/*)
 
 **Yêu cầu:** Python 3.11+, Node 18+ (chỉ cho frontend tests)
 
-Xem hướng dẫn từng bước đầy đủ tại **[docs/vi/SETUP.md](docs/vi/SETUP.md)**.
+Xem hướng dẫn từng bước đầy đủ tại **[docs/vi/SETUP.md](../vi/SETUP.md)**.
 
 ```bash
 python -m venv .venv
@@ -69,18 +70,18 @@ python -m pytest tests -q
 
 ## Deploy lên production
 
-Xem **[docs/vi/DEPLOY.md](docs/vi/DEPLOY.md)** để biết:
+Xem **[docs/vi/DEPLOY.md](../vi/DEPLOY.md)** để biết:
 
 - Koyeb (SQLite volume hoặc managed PostgreSQL)
 - Cloudflare Email Routing + Worker secrets
 - Tối ưu tài nguyên / lưu trữ có thời hạn
 - Các tùy chọn tính năng giới thiệu
 
-Worker entrypoint: [`worker/`](worker/) (`wrangler.toml` + `worker.js`).
+Worker entrypoint: [`worker/`](../../worker/) (`wrangler.toml` + `worker.js`).
 
 ## Cấu hình
 
-Sao chép [`.env.example`](.env.example). Các biến quan trọng:
+Sao chép [`.env.example`](../../.env.example). Các biến quan trọng:
 
 | Biến | Mục đích |
 | --- | --- |
@@ -93,7 +94,7 @@ Sao chép [`.env.example`](.env.example). Các biến quan trọng:
 
 ## API
 
-Tài liệu REST đầy đủ: **[docs/vi/API.md](docs/vi/API.md)**
+Tài liệu REST đầy đủ: **[docs/vi/API.md](../vi/API.md)**
 
 Swagger UI tương tác: `GET /docs` trên instance đang chạy.
 
@@ -124,15 +125,15 @@ deploy/
 
 ## Bảo mật
 
-- Báo cáo lỗ hổng bảo mật một cách riêng tư — xem [SECURITY.md](SECURITY.md)
+- Báo cáo lỗ hổng bảo mật một cách riêng tư — xem [SECURITY.md](../../SECURITY.md)
 - Không bao giờ commit `.env`, `data/*.db`, hoặc Wrangler secrets
 - Giữ đăng ký và tạo mã giới thiệu tắt cho đến khi bạn cần
 
 ## Đóng góp
 
-Xem [CONTRIBUTING.md](CONTRIBUTING.md). Vui lòng tuân theo
-[Code of Conduct](CODE_OF_CONDUCT.md).
+Xem [CONTRIBUTING.md](../../CONTRIBUTING.md). Vui lòng tuân theo
+[Code of Conduct](../../CODE_OF_CONDUCT.md).
 
 ## Giấy phép
 
-[MIT](LICENSE)
+[MIT](../../LICENSE)

@@ -67,6 +67,8 @@ window.LOCALES.zh = {
 
   /* ── sidebar ─────────────────────────────────────────────── */
   'sidebar.createMailbox':       '创建邮箱',
+  'sidebar.compose':             '写邮件',
+  'sidebar.sent':                '已发送',
   'sidebar.closeMenu':           '关闭菜单',
   'sidebar.searchMailbox':       '搜索邮箱…',
   'sidebar.searchAriaLabel':     '搜索邮箱',
@@ -77,6 +79,28 @@ window.LOCALES.zh = {
   'sidebar.accountBtn':          '账户',
   'sidebar.logoutBtn':           '退出',
   'sidebar.selectMailbox':       '选择 {address}',
+
+  /* ── compose ─────────────────────────────────────────────── */
+  'compose.titleNew':            '新邮件',
+  'compose.from':                '发件人',
+  'compose.to':                  '收件人',
+  'compose.cc':                  '抄送',
+  'compose.bcc':                 '密送',
+  'compose.subject':             '主题',
+  'compose.bodyPlaceholder':     '撰写邮件…',
+  'compose.send':                '发送',
+  'compose.sending':             '正在发送…',
+  'compose.discard':             '舍弃',
+  'compose.cancel':              '取消',
+  'compose.attach':              '添加附件',
+  'compose.sentOk':              '邮件已发送。',
+  'compose.discardConfirm':      '舍弃草稿并关闭撰写窗口？',
+  'compose.notEnabled':          '尚未启用外发邮件。请配置 WORKER_SEND_URL 与 Cloudflare Email Sending。',
+  'compose.noMailbox':           '您还没有可用于发信的邮箱。',
+  'compose.reply':               '回复',
+  'compose.emptySent':           '暂无已发送邮件。',
+  'compose.pickSent':            '选择一封已发送邮件以查看',
+  'compose.failed':              '失败',
 
   /* ── inbox ───────────────────────────────────────────────── */
   'inbox.selectAll':             '选择本页所有邮件',
