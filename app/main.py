@@ -52,7 +52,7 @@ BASE_DIR = ROOT_DIR  # used by backup/export paths that expect the repo root
 # --- database selection ------------------------------------------------
 # Set DATABASE_URL (or POSTGRES_URL) to a postgres:// DSN to use PostgreSQL.
 # Leave it unset to use the zero-config SQLite file at DATABASE_PATH.
-# Managed hosts (Koyeb, Neon, Supabase, Railway) hand out a postgres:// URL;
+# Managed hosts (Neon, Supabase, Railway, Fly, …) hand out a postgres:// URL;
 # paste it verbatim and nothing else needs to change.
 USING_POSTGRES = dbm.using_postgres()
 if not USING_POSTGRES:
@@ -72,6 +72,9 @@ MAX_SEND_RECIPIENTS = int(os.getenv("MAX_SEND_RECIPIENTS", "50"))
 MAX_SEND_ATTACHMENT_BYTES = int(os.getenv("MAX_SEND_ATTACHMENT_BYTES", str(3 * 1024 * 1024)))
 MAX_SEND_ATTACHMENTS = int(os.getenv("MAX_SEND_ATTACHMENTS", "10"))
 MAX_SEND_BODY_CHARS = int(os.getenv("MAX_SEND_BODY_CHARS", "200000"))
+# Soft disk budget for the admin System page progress bar (MB). 0 = unset
+# (show used size only, no percentage against a hard host limit).
+DISK_LIMIT_MB = max(0, int(os.getenv("DISK_LIMIT_MB", "0") or "0"))
 SESSION_DAYS = int(os.getenv("SESSION_DAYS", "7"))
 MAX_EMAIL_BYTES = int(os.getenv("MAX_EMAIL_BYTES", str(10 * 1024 * 1024)))
 MAX_BODY_CHARS = int(os.getenv("MAX_BODY_CHARS", "200000"))
@@ -3064,7 +3067,7 @@ async def message_html(request: Request,message_id: int,remote: Optional[int]=No
             raw_b = dbm.as_bytes(a["data"]) if a["data"] else b""
             if not raw_b:
                 continue
-            # Guard against large attachments exhausting memory in 512MB RAM
+            # Guard against large attachments exhausting memory on small hosts
             if len(raw_b) > 512 * 1024 or cid_total + len(raw_b) > 2 * 1024 * 1024:
                 continue
             cid_total += len(raw_b)
@@ -4447,7 +4450,7 @@ async def admin_system_stats(request: Request) -> dict[str, Any]:
         return {
             "db_engine": "PostgreSQL" if USING_POSTGRES else "SQLite",
             "db_size_bytes": db_size,
-            "koyeb_disk_limit_mb": 2000,
+            "disk_limit_mb": DISK_LIMIT_MB,
             "auto_delete_enabled": auto_delete_open(conn),
             "auto_delete_days": retention_days,
             "total_messages": total_messages,

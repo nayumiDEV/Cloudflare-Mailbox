@@ -75,7 +75,7 @@ python -m pytest tests -q
 
 See **[docs/DEPLOY.md](../DEPLOY.md)** for:
 
-- Koyeb (SQLite volume or managed PostgreSQL)
+- Any VPS / PaaS (SQLite volume or managed PostgreSQL)
 - Cloudflare Email Routing + Worker secrets
 - Resource / retention tuning
 - Referral feature switches
@@ -121,8 +121,6 @@ static/              Web UI (index.html, app.js, app.css)
 worker/              Cloudflare Email Worker
 tests/               pytest + JS unit/e2e tests
 docs/                Documentation (SETUP, DEPLOY, API)
-deploy/
-  koyeb.yaml         Example Koyeb service config
 .env.example         Copy → .env
 ```
 

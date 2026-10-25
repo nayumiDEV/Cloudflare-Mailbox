@@ -23,7 +23,7 @@ A clear description of what went wrong.
 ## Environment
 
 - OTP Inbox commit / version:
-- Deploy target (local / Koyeb / other):
+- Deploy target (local / VPS / PaaS / other):
 - Database (SQLite / PostgreSQL):
 - Browser (if UI):
 

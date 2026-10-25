@@ -8,7 +8,7 @@
 
 | 文档 | 用途 |
 | --- | --- |
-| [DEPLOY](DEPLOY.md) | PaaS / Koyeb 调优、数据保留、保活 |
+| [DEPLOY](DEPLOY.md) | PaaS / VPS 调优、数据保留、保活 |
 | [API](API.md) | REST 概述（完整参考：[API.md](../API.md)） |
 | [SECURITY.md](../../SECURITY.md) | 漏洞报告与安全加固 |
 
@@ -32,7 +32,7 @@ Internet mail  →  Cloudflare Email Routing (catch-all)
 你需要：
 
 1. 一个托管在 Cloudflare 上的域名（用于 Email Routing）
-2. 运行 API 的地方（测试用本地电脑，生产用 Koyeb / 任意 Linux 主机）
+2. 运行 API 的地方（测试用本地电脑，生产用任意 Linux / PaaS 主机）
 3. 该主机上安装 Python 3.11+
 
 ---
@@ -104,7 +104,6 @@ Cloudflare-Mailbox/
 │   └── wrangler.toml
 ├── tests/               # pytest + JS 单元测试
 ├── docs/                # 本文档
-├── deploy/koyeb.yaml    # Koyeb 服务配置示例
 ├── requirements.txt
 ├── requirements-dev.txt
 └── .env.example         # 复制 → .env
@@ -230,20 +229,16 @@ cd tests/js && npm install && npm run test:unit
 
 ## 4. 生产部署（API）
 
-你可以在任何 Linux 容器 / VPS 上托管 API。以下介绍：**Koyeb**（文档最完整）以及通用的无 Docker systemd 方案。
+你可以在任何 Linux 容器 / VPS / PaaS 上托管 API。详见 **[DEPLOY.md](DEPLOY.md)**；下面是通用 systemd 方案。
 
-### 4.1 Koyeb — 推荐配置
+### 4.1 推荐进程配置
 
 | 字段 | 值 |
 | --- | --- |
-| Builder | Nixpacks / Buildpacks |
-| Build command | *（留空 — 自动识别 `requirements.txt`）* |
 | **Start command** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1` |
 | Health check | `GET /health` |
-| Instances | **Fixed: 1**（使用 SQLite 时尤其重要） |
+| Instances | **1**（SQLite 必需） |
 | Idle / sleep | **关闭** — 冷启动会导致 OTP 邮件丢失 |
-
-示例服务文件：[`deploy/koyeb.yaml`](../../deploy/koyeb.yaml)。
 
 #### 4.1.1 SQLite + 持久化卷
 

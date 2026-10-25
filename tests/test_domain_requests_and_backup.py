@@ -146,8 +146,8 @@ def test_admin_system_stats_and_vacuum(admin: dict):
     r = c.get("/api/admin/system/stats")
     assert r.status_code == 200
     d = r.json()
-    assert "koyeb_disk_limit_mb" in d
-    assert d["koyeb_disk_limit_mb"] == 2000
+    assert "disk_limit_mb" in d
+    assert d["disk_limit_mb"] == 0
     assert "db_size_bytes" in d
     assert "total_messages" in d
     assert "total_domains" in d

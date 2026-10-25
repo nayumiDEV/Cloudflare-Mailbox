@@ -72,7 +72,7 @@ python -m pytest tests -q
 
 Смотрите **[docs/ru/DEPLOY.md](../ru/DEPLOY.md)** для получения информации о:
 
-- Koyeb (SQLite-том или управляемый PostgreSQL)
+- Любой VPS / PaaS (SQLite-том или управляемый PostgreSQL)
 - Cloudflare Email Routing + секреты Worker
 - Настройка ресурсов / хранения данных
 - Переключатели реферальной функции
@@ -118,8 +118,6 @@ static/              Web UI (index.html, app.js, app.css)
 worker/              Cloudflare Email Worker
 tests/               pytest + JS unit/e2e тесты
 docs/                Документация (SETUP, DEPLOY, API)
-deploy/
-  koyeb.yaml         Пример конфигурации сервиса Koyeb
 .env.example         Копировать → .env
 ```
 

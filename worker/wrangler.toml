@@ -2,7 +2,7 @@ name = "otp-inbox-worker"
 main = "worker.js"
 compatibility_date = "2026-09-25"
 
-# Keep-alive: ping the backend /health endpoint so PaaS instances (e.g. Koyeb)
+# Keep-alive: ping the backend /health endpoint so PaaS / scale-to-zero hosts
 # do not cold-start when an OTP email arrives.
 [triggers]
 crons = ["*/5 * * * *"]

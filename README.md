@@ -80,9 +80,9 @@ python -m pytest tests -q
 
 See **[docs/DEPLOY.md](docs/DEPLOY.md)** for:
 
-- Koyeb (SQLite volume or managed PostgreSQL)
+- Any VPS / PaaS (SQLite volume or managed PostgreSQL)
 - Cloudflare Email Routing + Worker secrets
-- Resource / retention tuning
+- Disk / retention tuning (`DISK_LIMIT_MB`, auto-delete)
 - Referral feature switches
 
 Worker entrypoint: [`worker/`](worker/) (`wrangler.toml` + `worker.js`).
@@ -99,6 +99,7 @@ Copy [`.env.example`](.env.example). Important variables:
 | `APP_NAME` | Brand string in UI + `/health` |
 | `REGISTRATION_ENABLED` | Open the signup form (still needs a referral code) |
 | `AUTO_DELETE_ENABLED` / `AUTO_DELETE_DAYS` | Background message retention |
+| `DISK_LIMIT_MB` | Soft disk budget for Admin → System (`0` = unset) |
 
 ## API
 
@@ -125,9 +126,7 @@ app/                 Python package (FastAPI)
 static/              Web UI (index.html, app.js, app.css)
 worker/              Cloudflare Email Worker
 tests/               pytest + JS unit/e2e tests
-docs/                Documentation (SETUP, DEPLOY, API)
-deploy/
-  koyeb.yaml         Example Koyeb service config
+docs/                Documentation (SETUP, DEPLOY, API, SEND)
 .env.example         Copy → .env
 ```
 

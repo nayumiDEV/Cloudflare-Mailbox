@@ -8,7 +8,7 @@ Các tài liệu liên quan:
 
 | Tài liệu | Mục đích |
 | --- | --- |
-| [DEPLOY](DEPLOY.md) | Tinh chỉnh PaaS / Koyeb, lưu trữ có thời hạn, keep-alive |
+| [DEPLOY](DEPLOY.md) | Tinh chỉnh PaaS / VPS, lưu trữ có thời hạn, keep-alive |
 | [API](API.md) | Tổng quan REST (tài liệu đầy đủ: [API.md](../API.md)) |
 | [SECURITY.md](../../SECURITY.md) | Báo cáo lỗ hổng & hướng dẫn bảo mật |
 
@@ -32,7 +32,7 @@ Internet mail  →  Cloudflare Email Routing (catch-all)
 Bạn cần:
 
 1. Một tên miền trên Cloudflare (để dùng Email Routing)
-2. Nơi để chạy API (máy tính cá nhân để test, hoặc Koyeb / bất kỳ máy chủ Linux nào để production)
+2. Nơi để chạy API (máy tính cá nhân để test, hoặc bất kỳ máy chủ Linux nào để production)
 3. Python 3.11+ trên máy chủ đó
 
 ---
@@ -104,7 +104,6 @@ Cloudflare-Mailbox/
 │   └── wrangler.toml
 ├── tests/               # pytest + JS unit tests
 ├── docs/                # Tài liệu này
-├── deploy/koyeb.yaml    # Cấu hình Koyeb mẫu
 ├── requirements.txt
 ├── requirements-dev.txt
 └── .env.example         # Copy → .env
@@ -230,20 +229,16 @@ cd tests/js && npm install && npm run test:unit
 
 ## 4. Deploy production (API)
 
-Bạn có thể host API trên bất kỳ container Linux / VPS nào. Dưới đây: **Koyeb** (được ghi chép đầy đủ) và phác thảo systemd generic không dùng Docker.
+Bạn có thể host API trên bất kỳ container Linux / VPS nào. Xem **[DEPLOY.md](DEPLOY.md)** cho PaaS / VPS; bên dưới là phác thảo systemd generic.
 
-### 4.1 Koyeb — cài đặt khuyến nghị
+### 4.1 Cài đặt tiến trình khuyến nghị
 
 | Trường | Giá trị |
 | --- | --- |
-| Builder | Nixpacks / Buildpacks |
-| Build command | *(để trống — tự nhận diện `requirements.txt`)* |
 | **Start command** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1` |
 | Health check | `GET /health` |
-| Instances | **Fixed: 1** (đặc biệt khi dùng SQLite) |
+| Instances | **1** (bắt buộc với SQLite) |
 | Idle / sleep | **Tắt** — cold starts làm mất mail OTP |
-
-File cấu hình mẫu: [`deploy/koyeb.yaml`](../../deploy/koyeb.yaml).
 
 #### 4.1.1 SQLite + persistent volume
 

@@ -21,5 +21,5 @@ once tagged releases begin.
 
 - Default brand string is `OTP Inbox` (override with `APP_NAME`)
 - Cloudflare Worker lives only under `worker/` (removed duplicate root copies)
-- **Project restructure:** FastAPI application moved into `app/` package; entrypoint is now `uvicorn app.main:app`; demo seed is now `python -m app.seed`; deployment config moved to `deploy/koyeb.yaml`
+- **Project restructure:** FastAPI application moved into `app/` package; entrypoint is now `uvicorn app.main:app`; demo seed is now `python -m app.seed`
 - **Docs:** added `docs/SETUP.md` as primary getting-started guide (translated to vi/zh/ru); `docs/README.md` index updated to feature SETUP prominently

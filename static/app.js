@@ -349,7 +349,7 @@ function openCommandPalette() {
         { id: 'domains', label: 'Quản lý Tên miền', sub: 'Cấu hình Public, VIP, Yêu cầu duyệt và Quota', tag: 'Admin', icon: icon('rules', 18), shortcut: 'G D', run: () => goView('domains') },
         { id: 'rules', label: 'Routing Rules', sub: 'Cấu hình Catch-all, Domain, Prefix, Regex', tag: 'Admin', icon: icon('rules', 18), shortcut: 'G R', run: () => { S.view = 'rules'; render(); } },
         { id: 'users', label: 'Quản lý Người dùng', sub: 'Danh sách user, API key, phân quyền', tag: 'Admin', icon: icon('users', 18), shortcut: 'G U', run: () => { S.view = 'users'; render(); } },
-        { id: 'system', label: 'Hệ thống & Lưu trữ', sub: 'Giám sát Koyeb Disk, RAM, VACUUM, Sao lưu DB', tag: 'Admin', icon: icon('refresh', 18), shortcut: 'G S', run: () => goView('system') },
+        { id: 'system', label: 'Hệ thống & Lưu trữ', sub: 'Giám sát đĩa, VACUUM, sao lưu DB', tag: 'Admin', icon: icon('refresh', 18), shortcut: 'G S', run: () => goView('system') },
       ] : []),
       { id: 'referrals', label: 'Mã giới thiệu', sub: 'Xem và tạo mã mời thành viên', tag: 'Điều hướng', icon: icon('referrals', 18), run: () => { S.view = 'referrals'; render(); } },
       { id: 'notifications', label: 'Thông báo', sub: 'Xem các thông báo mới từ hệ thống', tag: 'Điều hướng', icon: icon('notifications', 18), run: () => { S.view = 'notifications'; render(); } },
@@ -3023,13 +3023,14 @@ function renderSystemPage() {
     loadSystemStats();
   }
   
-  const diskMb = adminSystem ? Math.round(adminSystem.db_size_bytes / (1024 * 1024)) : 0;
-  const diskLimitMb = adminSystem?.koyeb_disk_limit_mb || 2000;
-  const diskPercent = Math.min(100, Math.round((diskMb / diskLimitMb) * 100));
-  const barColor = diskPercent > 85 ? 'red' : (diskPercent > 70 ? 'yellow' : 'green');
+  const diskMb = adminSystem ? (adminSystem.db_size_bytes / (1024 * 1024)) : 0;
+  const diskLimitMb = Number(adminSystem?.disk_limit_mb || 0);
+  const hasDiskLimit = diskLimitMb > 0;
+  const diskPercent = hasDiskLimit ? Math.min(100, Math.round((diskMb / diskLimitMb) * 100)) : 0;
+  const barColor = !hasDiskLimit ? 'green' : (diskPercent > 85 ? 'red' : (diskPercent > 70 ? 'yellow' : 'green'));
   
   return pageShell('Hệ thống, Giám sát & Quản trị Lưu trữ',
-    'Theo dõi tài nguyên server Koyeb (512MB RAM, 2000MB Disk), dọn dẹp thư cũ và sao lưu dữ liệu.',
+    'Theo dõi dung lượng lưu trữ, dọn dẹp thư cũ và sao lưu dữ liệu.',
     `<button class="btn secondary" onclick="loadSystemStats();toast('Đã cập nhật chỉ số', true)">Refresh</button>
      <button class="btn primary" onclick="runSystemVacuum()">⚡ Chạy VACUUM</button>`,
     `
@@ -3037,15 +3038,15 @@ function renderSystemPage() {
       <div class="col-6">
         <div class="card">
           <div class="between">
-            <h3 style="margin:0">Ổ đĩa Koyeb (Giới hạn ${diskLimitMb} MB)</h3>
-            <span class="badge ${barColor}">${diskPercent}% Sử dụng</span>
+            <h3 style="margin:0">${hasDiskLimit ? `Lưu trữ (hạn mức ${diskLimitMb} MB)` : 'Lưu trữ'}</h3>
+            ${hasDiskLimit ? `<span class="badge ${barColor}">${diskPercent}% đã dùng</span>` : `<span class="badge green">${formatBytes(adminSystem?.db_size_bytes || 0)}</span>`}
           </div>
-          <div class="progress-bar-wrap">
+          ${hasDiskLimit ? `<div class="progress-bar-wrap">
             <div class="progress-bar-fill ${barColor}" style="width:${Math.max(diskPercent, 2)}%"></div>
-          </div>
+          </div>` : ''}
           <div class="between tiny muted">
             <span>Dung lượng DB: <b>${formatBytes(adminSystem?.db_size_bytes || 0)}</b></span>
-            <span>Hạn mức đĩa: <b>${diskLimitMb} MB</b></span>
+            <span>${hasDiskLimit ? `Hạn mức: <b>${diskLimitMb} MB</b>` : 'Chưa đặt hạn mức (<code>DISK_LIMIT_MB</code>)'}</span>
           </div>
           <div class="stat-grid" style="margin-top:14px">
             <div class="stat-card">
@@ -3092,7 +3093,7 @@ function renderSystemPage() {
         <button class="btn secondary small" onclick="runManualCleanup()">Dọn dẹp thư cũ ngay</button>
       </div>
       <div class="hint" style="margin-bottom:12px">
-        Tự động xoá thư quá hạn định kỳ và giải phóng dung lượng đĩa cho Koyeb.
+        Tự động xoá thư quá hạn định kỳ để giải phóng dung lượng đĩa.
       </div>
       <div class="grid">
         <div class="col-6">

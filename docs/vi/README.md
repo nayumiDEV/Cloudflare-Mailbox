@@ -72,7 +72,7 @@ python -m pytest tests -q
 
 Xem **[docs/vi/DEPLOY.md](../vi/DEPLOY.md)** để biết:
 
-- Koyeb (SQLite volume hoặc managed PostgreSQL)
+- Bất kỳ VPS / PaaS (SQLite volume hoặc managed PostgreSQL)
 - Cloudflare Email Routing + Worker secrets
 - Tối ưu tài nguyên / lưu trữ có thời hạn
 - Các tùy chọn tính năng giới thiệu
@@ -118,8 +118,6 @@ static/              Web UI (index.html, app.js, app.css)
 worker/              Cloudflare Email Worker
 tests/               pytest + JS unit/e2e tests
 docs/                Tài liệu (SETUP, DEPLOY, API)
-deploy/
-  koyeb.yaml         Ví dụ cấu hình Koyeb service
 .env.example         Copy → .env
 ```
 

@@ -8,7 +8,7 @@ Related docs:
 
 | Doc | Purpose |
 | --- | --- |
-| [DEPLOY](en/DEPLOY.md) | PaaS / Koyeb tuning, retention, keep-alive |
+| [DEPLOY](en/DEPLOY.md) | PaaS / VPS deploy, retention, keep-alive |
 | [API](en/API.md) | REST overview (full reference: [API.md](API.md)) |
 | [SECURITY.md](../SECURITY.md) | Vulnerability reporting & hardening |
 
@@ -32,7 +32,7 @@ Internet mail  →  Cloudflare Email Routing (catch-all)
 You need:
 
 1. A domain on Cloudflare (for Email Routing)
-2. Somewhere to run the API (laptop for test, or Koyeb / any Linux host for production)
+2. Somewhere to run the API (laptop for test, or any Linux / PaaS host for production)
 3. Python 3.11+ on that host
 
 ---
@@ -104,7 +104,6 @@ Cloudflare-Mailbox/
 │   └── wrangler.toml
 ├── tests/               # pytest + JS unit tests
 ├── docs/                # This documentation
-├── deploy/koyeb.yaml    # Example Koyeb service config
 ├── requirements.txt
 ├── requirements-dev.txt
 └── .env.example         # Copy → .env
@@ -230,26 +229,21 @@ cd tests/js && npm install && npm run test:unit
 
 ## 4. Production deploy (API)
 
-You can host the API on any Linux container/VPS. Below: **Koyeb** (documented thoroughly) and a generic Docker-less systemd sketch.
+You can host the API on any Linux container, VPS, or PaaS. Full notes:
+**[DEPLOY.md](DEPLOY.md)**.
 
-### 4.1 Koyeb — recommended settings
+### 4.1 Recommended process settings
 
-| Field | Value |
+| Setting | Value |
 | --- | --- |
-| Builder | Nixpacks / Buildpacks |
-| Build command | *(empty — detects `requirements.txt`)* |
 | **Start command** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1` |
 | Health check | `GET /health` |
-| Instances | **Fixed: 1** (especially with SQLite) |
+| Instances | **1** (required for SQLite) |
 | Idle / sleep | **Off** — cold starts drop OTP mail |
 
-Example service file: [`deploy/koyeb.yaml`](../deploy/koyeb.yaml).
+#### SQLite + persistent volume
 
-#### 4.1.1 SQLite + persistent volume
-
-1. Create a Volume (e.g. `otp-data`, 1 GB+)
-2. Mount it at `/data`
-3. Env:
+Mount a durable volume and point the DB at it:
 
 ```bash
 DATABASE_PATH=/data/otp_inbox.db
@@ -262,9 +256,11 @@ APP_NAME=OTP Inbox
 STORE_RAW_MIME=0
 AUTO_DELETE_ENABLED=1
 AUTO_DELETE_DAYS=7
+# Optional: your volume size for Admin → System % bar
+DISK_LIMIT_MB=2048
 ```
 
-#### 4.1.2 Managed PostgreSQL
+#### Managed PostgreSQL
 
 ```bash
 DATABASE_URL=postgres://user:pass@host:port/dbname
@@ -425,6 +421,7 @@ See [`.env.example`](../.env.example) for the complete list with comments. Criti
 | `STORE_RAW_MIME` | no | `0` saves disk (recommended on small volumes) |
 | `WORKER_SEND_URL` | no | Worker `…/send` URL; enables Compose / Sent |
 | `MAX_SEND_*` | no | Recipient / attachment / body caps for outbound |
+| `DISK_LIMIT_MB` | no | Soft disk budget for Admin → System (`0` = unset) |
 
 ---
 

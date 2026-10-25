@@ -72,7 +72,7 @@ python -m pytest tests -q
 
 参阅 **[docs/zh/DEPLOY.md](../zh/DEPLOY.md)**，内容包括：
 
-- Koyeb（SQLite 卷或托管 PostgreSQL）
+- 任意 VPS / PaaS（SQLite 卷或托管 PostgreSQL）
 - Cloudflare Email Routing + Worker 密钥配置
 - 资源 / 数据保留调优
 - 邀请功能开关
@@ -118,8 +118,6 @@ static/              Web UI (index.html, app.js, app.css)
 worker/              Cloudflare Email Worker
 tests/               pytest + JS 单元 / E2E 测试
 docs/                文档（SETUP、DEPLOY、API）
-deploy/
-  koyeb.yaml         Koyeb 服务配置示例
 .env.example         复制 → .env
 ```
 

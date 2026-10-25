@@ -8,7 +8,7 @@
 
 | Документ | Назначение |
 | --- | --- |
-| [DEPLOY](DEPLOY.md) | Настройка PaaS / Koyeb, хранение данных, keep-alive |
+| [DEPLOY](DEPLOY.md) | Настройка PaaS / VPS, хранение данных, keep-alive |
 | [API](API.md) | Обзор REST (полный справочник: [API.md](../API.md)) |
 | [SECURITY.md](../../SECURITY.md) | Отчёты об уязвимостях и рекомендации по безопасности |
 
@@ -32,7 +32,7 @@ Internet mail  →  Cloudflare Email Routing (catch-all)
 Вам потребуется:
 
 1. Домен на Cloudflare (для Email Routing)
-2. Место для запуска API (ноутбук для тестирования или Koyeb / любой Linux-хост для production)
+2. Место для запуска API (ноутбук для тестирования или любой Linux-хост для production)
 3. Python 3.11+ на этом хосте
 
 ---
@@ -104,7 +104,6 @@ Cloudflare-Mailbox/
 │   └── wrangler.toml
 ├── tests/               # pytest + JS unit-тесты
 ├── docs/                # Данная документация
-├── deploy/koyeb.yaml    # Пример конфигурации Koyeb
 ├── requirements.txt
 ├── requirements-dev.txt
 └── .env.example         # Копировать → .env
@@ -230,20 +229,16 @@ cd tests/js && npm install && npm run test:unit
 
 ## 4. Деплой в production (API)
 
-API можно разместить на любом Linux-контейнере / VPS. Ниже описаны **Koyeb** (подробная документация) и общий sketch на systemd без Docker.
+API можно разместить на любом Linux-контейнере / VPS. См. **[DEPLOY.md](DEPLOY.md)** для PaaS / VPS; ниже — sketch systemd без Docker.
 
-### 4.1 Koyeb — рекомендуемые настройки
+### 4.1 Рекомендуемые настройки процесса
 
 | Поле | Значение |
 | --- | --- |
-| Builder | Nixpacks / Buildpacks |
-| Build command | *(оставить пустым — автоматически определяет `requirements.txt`)* |
 | **Start command** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1` |
 | Health check | `GET /health` |
-| Instances | **Fixed: 1** (особенно при использовании SQLite) |
+| Instances | **1** (обязательно для SQLite) |
 | Idle / sleep | **Выключить** — холодный старт приводит к потере OTP-писем |
-
-Пример файла сервиса: [`deploy/koyeb.yaml`](../../deploy/koyeb.yaml).
 
 #### 4.1.1 SQLite + постоянный том
 
