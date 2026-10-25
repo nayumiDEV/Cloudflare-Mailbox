@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -12,13 +12,20 @@
 <script>
 // Apply the stored theme before first paint so there is no light flash.
 (function(){try{var t=localStorage.getItem('otp-theme');if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.classList.toggle('dark',t==='dark');}catch(e){}})();
+// Apply stored locale to <html lang> before paint.
+(function(){try{var l=localStorage.getItem('otp_locale');if(l==='en'||l==='vi'||l==='zh'||l==='ru')document.documentElement.lang=l;}catch(e){}})();
 </script>
 <link rel="stylesheet" href="/static/app.css?v=__ASSET_VERSION__">
 </head>
 <body>
 <div id="root"></div>
 <div id="toast" class="toast"></div>
-<button id="theme-toggle" class="theme-toggle" type="button" onclick="toggleTheme()" title="Đổi giao diện sáng/tối" aria-label="Đổi giao diện sáng/tối">☾</button>
+<button id="theme-toggle" class="theme-toggle" type="button" onclick="toggleTheme()" title="Theme" aria-label="Theme">☾</button>
+<script src="/static/i18n.js?v=__ASSET_VERSION__"></script>
+<script src="/static/locales/en.js?v=__ASSET_VERSION__"></script>
+<script src="/static/locales/vi.js?v=__ASSET_VERSION__"></script>
+<script src="/static/locales/zh.js?v=__ASSET_VERSION__"></script>
+<script src="/static/locales/ru.js?v=__ASSET_VERSION__"></script>
 <script src="/static/app.js?v=__ASSET_VERSION__"></script>
 <datalist id="user-list"></datalist>
 </body>

@@ -32,8 +32,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-import db as dbm
-import schema as schema_mod
+from app import db as dbm
+from app import schema as schema_mod
 
 
 # ============================================================
@@ -41,8 +41,11 @@ import schema as schema_mod
 # ============================================================
 
 APP_NAME = os.getenv("APP_NAME", "OTP Inbox")
-BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
+# Package dir is app/; repo root (static/, data/, worker/) sits one level up.
+APP_DIR = Path(__file__).resolve().parent
+ROOT_DIR = APP_DIR.parent
+STATIC_DIR = ROOT_DIR / "static"
+BASE_DIR = ROOT_DIR  # used by backup/export paths that expect the repo root
 
 # --- database selection ------------------------------------------------
 # Set DATABASE_URL (or POSTGRES_URL) to a postgres:// DSN to use PostgreSQL.
@@ -2187,7 +2190,15 @@ def read_index() -> str:
 
 def asset_version() -> str:
     digest = hashlib.sha256()
-    for name in ("app.css", "app.js"):
+    for name in (
+        "app.css",
+        "app.js",
+        "i18n.js",
+        "locales/en.js",
+        "locales/vi.js",
+        "locales/zh.js",
+        "locales/ru.js",
+    ):
         path = STATIC_DIR / name
         if path.exists():
             digest.update(path.read_bytes())

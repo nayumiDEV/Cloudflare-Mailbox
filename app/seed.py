@@ -13,18 +13,17 @@ import secrets
 import hashlib
 import base64
 
-# Import helper functions from app
-import app
-import db
-import schema
+from app import db, schema
+from app import main as app
+
 
 def run_seed():
     db_path = os.getenv("DATABASE_PATH", "./data/otp_inbox.db")
-    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
-    
+    os.makedirs(os.path.dirname(os.path.abspath(db_path)) or ".", exist_ok=True)
+
     # Run standard app DB initialization
     app.init_db()
-    
+
     raw_ctx = db.connect()
     conn = raw_ctx.__enter__()
 

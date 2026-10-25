@@ -19,7 +19,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 cp .env.example .env
 # edit .env — set ADMIN_PASSWORD, WORKER_INGEST_TOKEN, COOKIE_SECURE=0 for local HTTP
 
-uvicorn app:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Open http://127.0.0.1:8000 and sign in with the admin credentials from `.env`.
@@ -27,7 +27,7 @@ Open http://127.0.0.1:8000 and sign in with the admin credentials from `.env`.
 Optional demo data:
 
 ```bash
-python seed_demo.py
+python -m app.seed
 ```
 
 ## Tests
@@ -56,11 +56,17 @@ you are changing UI flows.
 
 ### Style notes
 
-- Backend is a FastAPI app in `app.py` with helpers in `db.py` / `schema.py`
+- Backend is a FastAPI package under `app/` (`app/main.py` is the entrypoint; `app/db.py` and `app/schema.py` are helpers); run with `uvicorn app.main:app`
 - UI is vanilla JS in `static/app.js` (no bundler) — keep the re-render +
   `data-scroll` / `data-focus-key` pattern intact
 - Prefer clear names and short comments that explain *why*, not *what*
 - Do not commit secrets, `.env`, databases, or Wrangler credentials
+
+## Internationalization (i18n)
+
+UI strings live as Vietnamese source in `static/app.js`; translations are in
+`static/locales/{en,vi,zh,ru}.js`. When adding a new string, add the key and
+its translation to **all four** locale files.
 
 ## Reporting bugs / ideas
 

@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 _TMP = tempfile.mkdtemp(prefix="otp-inbox-tests-")
 
 # Which backend to exercise. "pg" runs the whole suite through the PostgreSQL
-# code path in db.py/app.py using a psycopg stand-in over real SQLite, so the
+# code path in db.py/main.py using a psycopg stand-in over real SQLite, so the
 # dialect handling is covered without needing a PostgreSQL server.
 BACKEND = os.getenv("OTP_TEST_BACKEND", "sqlite").lower()
 _DB_FILE = str(pathlib.Path(_TMP) / "test.db")
@@ -47,7 +47,7 @@ os.environ.update({
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-import app as app_module  # noqa: E402
+from app import main as app_module  # noqa: E402
 
 # True when the "PostgreSQL" backend is the pgshim stand-in rather than a real
 # server. The shim cannot reproduce a real tsvector, so a few assertions that

@@ -3,8 +3,8 @@
   "private": true,
   "description": "DOM-level and Playwright E2E tests for static/app.js.",
   "scripts": {
-    "test": "node --test && node e2e.test.mjs",
-    "test:unit": "node --test",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test app.test.mjs",
     "test:e2e": "node e2e.test.mjs"
   },
   "devDependencies": {

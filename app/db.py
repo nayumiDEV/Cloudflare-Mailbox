@@ -3,7 +3,7 @@
 The application was written against ``sqlite3``. Rather than rewrite ~90
 queries, this module exposes a small adapter that presents the same
 ``connect -> execute -> fetch`` surface on top of either SQLite or PostgreSQL,
-so ``app.py`` can stay dialect-agnostic and the deployment can move to
+so ``app.main`` can stay dialect-agnostic and the deployment can move to
 PostgreSQL purely through configuration.
 
 Select the backend with ``DATABASE_URL``:

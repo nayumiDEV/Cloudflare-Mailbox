@@ -1,5 +1,7 @@
 # OTP Inbox — API Documentation
 
+**Languages:** [English](en/API.md) · [Tiếng Việt](vi/API.md) · [中文](zh/API.md) · [Русский](ru/API.md)
+
 REST API for **OTP Inbox** (FastAPI). Default base URL:
 
 ```

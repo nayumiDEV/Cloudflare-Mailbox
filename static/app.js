@@ -82,13 +82,29 @@ function esc(s) {
   }[c]));
 }
 
+/** Translate a Vietnamese source string to the active locale. */
+function LT(s, vars) {
+  return (typeof localizeText === 'function') ? localizeText(s, vars) : s;
+}
+
+/** Translate Vietnamese UI copy embedded in an HTML blob. */
+function LH(html) {
+  return (typeof localizeHtml === 'function') ? localizeHtml(html) : html;
+}
+
+function localeTag() {
+  const code = (typeof getLocale === 'function') ? getLocale() : 'en';
+  if (code === 'zh') return 'zh-CN';
+  return code;
+}
+
 function escapeRegExp(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function fmt(s) {
   try {
-    return new Date(s).toLocaleString();
+    return new Date(s).toLocaleString(localeTag());
   } catch {
     return s || '';
   }
@@ -182,6 +198,7 @@ function highlight(value, query) {
 function toast(msg, ok = false, kind = '') {
   const host = document.getElementById('toast');
   if (!host) return;
+  msg = LT(msg);
   const cls = kind || (ok ? 'ok' : 'error');
   const ic = cls === 'ok' ? icon('check', 16) : (cls === 'error' ? icon('warning', 16) : icon('notifications', 16));
   const id = 't-' + Date.now();
@@ -270,13 +287,16 @@ async function api(path, opts = {}) {
 
 function modal(title, body, customClass = '') {
   closeModal();
+  title = title ? LT(title) : title;
+  body = LH(body);
   const headHtml = title
-    ? `<div class="modal-head"><span>${esc(title)}</span><button class="btn secondary small" onclick="closeModal()">Đóng</button></div>`
+    ? `<div class="modal-head"><span>${esc(title)}</span><button class="btn secondary small" onclick="closeModal()">${esc(LT('Đóng'))}</button></div>`
     : '';
-  document.body.insertAdjacentHTML('beforeend',
-    `<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="${esc(title || 'Hộp thoại')}" onclick="if(event.target===this)closeModal()">` +
+  document.body.insertAdjacentHTML('beforeend', LH(
+    `<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="${esc(title || LT('Hộp thoại'))}" onclick="if(event.target===this)closeModal()">` +
     `<div class="modal-card ${customClass}">${headHtml}` +
-    `<div style="${title ? 'margin-top:12px' : ''}">${body}</div></div></div>`);
+    `<div style="${title ? 'margin-top:12px' : ''}">${body}</div></div></div>`
+  ));
 }
 
 function closeModal() {
@@ -343,24 +363,37 @@ function openCommandPalette() {
         }));
     }
 
-    const filteredActions = actions.filter(it =>
-      !term ||
-      it.label.toLowerCase().includes(term) ||
-      it.sub.toLowerCase().includes(term) ||
-      it.tag.toLowerCase().includes(term)
-    );
+    const localizeCmd = (it) => ({
+      ...it,
+      label: LT(it.label),
+      sub: LT(it.sub),
+      tag: LT(it.tag),
+    });
 
-    return [...mailboxMatches, ...filteredActions];
+    const filteredActions = actions.filter(it => {
+      if (!term) return true;
+      const loc = localizeCmd(it);
+      return (
+        loc.label.toLowerCase().includes(term) ||
+        loc.sub.toLowerCase().includes(term) ||
+        loc.tag.toLowerCase().includes(term) ||
+        it.label.toLowerCase().includes(term) ||
+        it.sub.toLowerCase().includes(term) ||
+        it.tag.toLowerCase().includes(term)
+      );
+    }).map(localizeCmd);
+
+    return [...mailboxMatches.map(localizeCmd), ...filteredActions];
   };
 
   const renderCmdItems = () => {
     const listEl = document.getElementById('cmd-list');
     if (!listEl) return;
     if (!cmdPaletteItems.length) {
-      listEl.innerHTML = '<div class="empty" style="padding:28px 0">Không tìm thấy lệnh hoặc mailbox nào</div>';
+      listEl.innerHTML = LH('<div class="empty" style="padding:28px 0">Không tìm thấy lệnh hoặc mailbox nào</div>');
       return;
     }
-    listEl.innerHTML = cmdPaletteItems.map((it, idx) => `
+    listEl.innerHTML = LH(cmdPaletteItems.map((it, idx) => `
       <div class="cmd-item ${idx === cmdPaletteIndex ? 'active' : ''}" data-idx="${idx}" onclick="window.__execCmd(${idx})">
         <div class="cmd-item-label">
           <span style="font-size:16px">${it.icon}</span>
@@ -374,7 +407,7 @@ function openCommandPalette() {
           <span class="cmd-badge">${esc(it.tag)}</span>
         </div>
       </div>
-    `).join('');
+    `).join(''));
 
     const activeEl = listEl.querySelector('.cmd-item.active');
     if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
@@ -680,12 +713,15 @@ function renderAuth(mode) {
       </svg>
       <div class="google-auth-brand-name">${esc(name)} <span class="gmail-brand-tag">OTP</span></div>
     </div>
-    <div class="google-auth-title">${S.authMode === 'register' ? 'Tạo tài khoản' : 'Đăng nhập'}</div>
-    <div class="google-auth-sub">${S.authMode === 'register' ? `Đăng ký tài khoản ${esc(name)}` : `Sử dụng tài khoản ${esc(name)} của bạn`}</div>
+    <div class="google-auth-title">${esc(S.authMode === 'register' ? t('auth.registerTitle') : t('auth.loginTitle'))}</div>
+    <div class="google-auth-sub">${esc(S.authMode === 'register' ? t('auth.registerSubtitle', { name }) : t('auth.loginSubtitle', { name }))}</div>
   </div>`;
 
+  const langBar = `<div class="auth-lang-bar">${typeof languageSwitcherHtml === 'function' ? languageSwitcherHtml('lang-switch-auth') : ''}</div>`;
+
   if (S.authMode === 'register') {
-    root.innerHTML = `<div class="login-wrap"><div class="card login">
+    root.innerHTML = LH(`<div class="login-wrap"><div class="card login">
+      ${langBar}
       ${brand}
       <div id="auth-msg"></div>
       <div class="field"><label>Mã giới thiệu</label>
@@ -701,11 +737,12 @@ function renderAuth(mode) {
       <button class="btn primary" style="width:100%;margin-top:16px;border-radius:20px;height:42px" onclick="register()">Đăng ký</button>
       <div class="auth-switch">Đã có tài khoản?
         <button onclick="showLogin()">Đăng nhập</button></div>
-    </div></div>`;
+    </div></div>`);
     return;
   }
 
-  root.innerHTML = `<div class="login-wrap"><div class="card login">
+  root.innerHTML = LH(`<div class="login-wrap"><div class="card login">
+    ${langBar}
     ${brand}
     <div id="auth-msg"></div>
     <div class="field"><label>Tài khoản</label>
@@ -716,7 +753,7 @@ function renderAuth(mode) {
     <button class="btn primary" style="width:100%;margin-top:16px;border-radius:20px;height:42px" onclick="login()">Đăng nhập</button>
     ${canRegister ? `<div class="auth-switch">Chưa có tài khoản?
       <button onclick="showRegister()">Đăng ký bằng mã giới thiệu</button></div>` : ''}
-  </div></div>`;
+  </div></div>`);
 }
 
 function renderLogin() {
@@ -898,7 +935,7 @@ function render() {
   const scroll = captureScroll();
   const focus = captureFocus();
   const management = S.view !== 'inbox';
-  document.getElementById('root').innerHTML =
+  document.getElementById('root').innerHTML = LH(
     `<div class="app ${management ? 'management' : ''} ${S.sidebarCollapsed ? 'sidebar-collapsed' : ''}">` +
       renderHeader() +
       `<div class="gmail-body">` +
@@ -909,7 +946,8 @@ function render() {
         `<section class="reader ${S.selectedMessageId ? 'mobile-open' : ''}">` +
           `${S.view === 'inbox' ? renderReader() : renderNoReader()}</section>` +
       `</div>` +
-    `</div>`;
+    `</div>`
+  );
   const dl = document.getElementById('user-list');
   if (dl) {
     dl.innerHTML = S.users
@@ -970,6 +1008,7 @@ function renderHeader() {
       </div>
     </div>
     <div class="gmail-header-right">
+      ${typeof languageSwitcherHtml === 'function' ? languageSwitcherHtml('lang-switch-header') : ''}
       <button class="gmail-icon-btn" type="button" onclick="refreshData().then(render)" title="Làm mới (↻)" aria-label="Làm mới">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
       </button>
@@ -1517,7 +1556,7 @@ async function fillReader(id) {
           <a class="btn secondary small" href="/api/attachments/${a.id}" target="_blank" rel="noopener">Mở</a>
         </div>`).join('') + `</div>`;
     }
-    el.innerHTML = html;
+    el.innerHTML = LH(html);
   } catch (e) {
     if (S.selectedMessageId === id) {
       el.innerHTML = `<div class="notice error">${esc(e.message)}</div>`;
@@ -3625,5 +3664,31 @@ async function testRules() {
    Boot
    ===================================================================== */
 
+/* Locale change → full re-render (UI copy is Vietnamese source + runtime LH/LT). */
+document.addEventListener('otp:locale', () => {
+  try {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) {
+      btn.title = LT('Đổi giao diện sáng/tối');
+      btn.setAttribute('aria-label', LT('Đổi giao diện sáng/tối'));
+    }
+  } catch (_) { /* ignore */ }
+  if (S.me) render();
+  else renderAuth(S.authMode || 'login');
+});
+
+/* Translate confirm() dialogs that still use Vietnamese source strings. */
+(function patchConfirm() {
+  const native = window.confirm.bind(window);
+  window.confirm = (message) => native(LT(String(message || '')));
+})();
+
 applyTheme();
 init();
+try {
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.title = LT('Đổi giao diện sáng/tối');
+    btn.setAttribute('aria-label', LT('Đổi giao diện sáng/tối'));
+  }
+} catch (_) { /* ignore */ }

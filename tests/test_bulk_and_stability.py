@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-import app as app_module
+from app import main as app_module
 from conftest import create_user
 
 
