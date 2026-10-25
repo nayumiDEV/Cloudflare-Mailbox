@@ -1,6 +1,6 @@
 """Unit tests for OTP extraction (no database)."""
 
-import app as app_module
+from app import main as app_module
 
 
 def test_extracts_hyphenated_otp():

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from fastapi.testclient import TestClient
 
-import app as app_module
+from app import main as app_module
 
 
 def test_admin_retention_get_requires_admin(client: TestClient):

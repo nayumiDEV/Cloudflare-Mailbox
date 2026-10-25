@@ -664,6 +664,28 @@ test('branding displays APP_NAME in header and login', async () => {
   assert.match(authBrand.textContent, /OTP Inbox/);
 });
 
+test('i18n switches login copy between en and vi', async () => {
+  const { window } = await boot();
+  window.S.me = null;
+  window.setLocale('en');
+  window.renderAuth('login');
+  assert.match(window.document.querySelector('.google-auth-title').textContent, /Sign In/i);
+  assert.ok(window.document.querySelector('.lang-switch-select'), 'language switcher on auth');
+
+  window.setLocale('vi');
+  window.renderAuth('login');
+  assert.match(window.document.querySelector('.google-auth-title').textContent, /Đăng nhập/);
+
+  window.setLocale('zh');
+  window.renderAuth('login');
+  assert.match(window.document.querySelector('.google-auth-title').textContent, /登录/);
+
+  window.setLocale('ru');
+  window.renderAuth('login');
+  // Catalog uses «Вход» for the login title
+  assert.match(window.document.querySelector('.google-auth-title').textContent, /Вход/);
+});
+
 test('desktop sidebar toggle collapses and expands sidebar', async () => {
   const { window } = await boot();
   window.innerWidth = 1200;

@@ -50,7 +50,7 @@ def test_session_still_needs_csrf_for_writes(client):
     create_user("csrfuser")
     login = client.post("/api/login", json={"username": "csrfuser", "password": "password-for-tests"})
     assert login.status_code == 200
-    # Cookie is set; omit CSRF → 403
+    # Cookie is set; omit CSRF ? 403
     r = client.post("/api/mailboxes/create", json={"address": "needs-csrf@example.com"})
     assert r.status_code == 403
     csrf = login.json()["csrf"]

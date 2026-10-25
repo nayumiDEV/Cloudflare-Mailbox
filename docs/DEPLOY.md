@@ -1,5 +1,7 @@
 # Deploying to Koyeb
 
+**Languages:** [English](en/DEPLOY.md) · [Tiếng Việt](vi/DEPLOY.md) · [中文](zh/DEPLOY.md) · [Русский](ru/DEPLOY.md)
+
 Backend hỗ trợ cả **SQLite** (với Koyeb Persistent Volume) và **PostgreSQL**.
 
 ---
@@ -10,11 +12,13 @@ Backend hỗ trợ cả **SQLite** (với Koyeb Persistent Volume) và **Postgre
 | --- | --- |
 | Builder | `Nixpacks` (hoặc `Buildpacks`) |
 | Build command | *(để trống — tự nhận diện `requirements.txt`)* |
-| Start command | `uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1` |
+| Start command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1` |
 | Instance size | `nano` (512MB RAM, 2000MB Disk) |
 | Health check path | `/health` |
 | Port | Koyeb tự set `$PORT` (mặc định 8000) |
 | Scale / Instances | **Fixed: 1** (Min 1, Max 1) |
+
+Example service definition: [`deploy/koyeb.yaml`](../deploy/koyeb.yaml).
 
 ---
 
@@ -24,7 +28,7 @@ Nếu bạn thấy Koyeb hiển thị 2 instances hoặc 2 workers đang chạy,
 
 1. **Cấu hình Autoscaling mặc định của Koyeb:**
    - Khi tạo Web Service mới trên Koyeb qua giao diện Web UI, Koyeb thường đặt mặc định **Autoscaling: Min 1, Max 2** (hoặc Fixed: 2).
-   - **Cách sửa:** Vào Service Settings -> **Scaling** -> Chọn **Fixed** -> Điền **1** (hoặc nếu để Autoscaling thì đặt **Min 1, Max 1**). File cấu hình `koyeb.yaml` đã được thiết lập sẵn `min: 1, max: 1`.
+   - **Cách sửa:** Vào Service Settings -> **Scaling** -> Chọn **Fixed** -> Điền **1** (hoặc nếu để Autoscaling thì đặt **Min 1, Max 1**). File cấu hình `deploy/koyeb.yaml` đã được thiết lập sẵn `min: 1, max: 1`.
 
 2. **Cơ chế Rolling Deployment (Không Downtime) của Koyeb:**
    - Mỗi khi bạn git push code mới lên hoặc Koyeb tiến hành Redeploy, Koyeb sẽ khởi động container mới (Instance 2).
@@ -287,7 +291,7 @@ User sends email to anything@yourdomain.com
      Cloudflare Worker (worker.js)
                     │ (POST /api/ingest + X-Worker-Token)
                     ▼
-          FastAPI App (app.py)
+          FastAPI App (app/main.py)
                     │
   ┌─────────────────┴─────────────────┐
   ▼                                   ▼
@@ -333,7 +337,7 @@ python -m venv .venv
 .venv\Scripts\activate          # Windows
 pip install -r requirements.txt -r requirements-dev.txt
 copy .env.example .env          # Windows
-uvicorn app:app --reload
+uvicorn app.main:app --reload
 ```
 
 Without `DATABASE_URL` the app uses `./data/otp_inbox.db`, so you can develop

@@ -1,5 +1,5 @@
 import pytest
-import app as app_module
+from app import main as app_module
 from conftest import create_user, ingest
 
 

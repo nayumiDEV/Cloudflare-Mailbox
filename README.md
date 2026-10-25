@@ -1,5 +1,7 @@
 # OTP Inbox
 
+**Languages:** [English](README.md) · [Tiếng Việt](README.vi.md) · [中文](README.zh.md) · [Русский](README.ru.md)
+
 Self-hosted **catch-all email inbox** with automatic OTP extraction, multi-user
 access control, referral-gated registration, and a Developer API.
 
@@ -21,6 +23,7 @@ web UI lets you browse mailboxes, search messages, and manage routing rules.
 - **Full-text search** (SQLite FTS5 / PostgreSQL `tsvector`)
 - **Retention** — optional auto-delete of old messages
 - **Zero build step** — static `app.css` / `app.js` with content-hash cache busting
+- **Internationalization** — UI supports EN / VI / ZH / RU via the language switcher
 
 ## Architecture
 
@@ -34,7 +37,7 @@ Cloudflare Email Routing (catch-all)
 Cloudflare Worker  (worker/)
         │  POST /api/ingest + X-Worker-Token
         ▼
-FastAPI  (app.py)  ·  SQLite or PostgreSQL
+FastAPI  (app/main.py)  ·  SQLite or PostgreSQL
         │
         ▼
 Web UI  (static/)  +  REST API  (/api/*)
@@ -43,6 +46,8 @@ Web UI  (static/)  +  REST API  (/api/*)
 ## Quick start (local)
 
 **Requirements:** Python 3.11+, Node 18+ (only for frontend tests)
+
+For the full step-by-step guide see **[docs/SETUP.md](docs/SETUP.md)**.
 
 ```bash
 python -m venv .venv
@@ -53,7 +58,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 cp .env.example .env
 # Set ADMIN_PASSWORD, WORKER_INGEST_TOKEN; COOKIE_SECURE=0 for plain HTTP
 
-uvicorn app:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Open http://127.0.0.1:8000 and sign in with `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
@@ -106,15 +111,18 @@ curl -s -H "Authorization: Bearer sk-otp-YOUR_KEY" https://your-host/api/dashboa
 ## Project layout
 
 ```text
-app.py              FastAPI application
-db.py               SQLite / PostgreSQL connection helpers
-schema.py           Schema DDL (both backends)
-static/             Web UI (index.html, app.js, app.css)
-worker/             Cloudflare Email Worker
-seed_demo.py        Optional local demo data
-tests/              pytest + JS unit/e2e tests
-docs/               Deploy & API documentation
-koyeb.yaml          Example Koyeb service config
+app/                 Python package (FastAPI)
+  main.py            HTTP API + business logic  →  uvicorn app.main:app
+  db.py              SQLite / PostgreSQL connection helpers
+  schema.py          Schema DDL (both backends)
+  seed.py            Optional demo data  →  python -m app.seed
+static/              Web UI (index.html, app.js, app.css)
+worker/              Cloudflare Email Worker
+tests/               pytest + JS unit/e2e tests
+docs/                Documentation (SETUP, DEPLOY, API)
+deploy/
+  koyeb.yaml         Example Koyeb service config
+.env.example         Copy → .env
 ```
 
 ## Security

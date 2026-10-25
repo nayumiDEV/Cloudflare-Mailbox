@@ -67,13 +67,23 @@ export function loadApp({ routes = {}, me = defaultUser() } = {}) {
   // prove the app writes the saved value back.
   window.Element.prototype.scrollTo = function () {};
 
-  // Inject as a classic <script> so the app's top-level `const`/`function`
-  // bindings land in the window's global lexical scope, which is what a
-  // browser does and what inline onclick handlers rely on.
-  const script = fs.readFileSync(path.join(STATIC, 'app.js'), 'utf8');
-  const el = window.document.createElement('script');
-  el.textContent = script;
-  window.document.head.appendChild(el);
+  // Inject as classic <script>s so top-level `const`/`function` bindings land
+  // in the window's global lexical scope (same as the browser), which inline
+  // onclick handlers rely on. Load i18n + locales before the app.
+  const inject = (rel) => {
+    const el = window.document.createElement('script');
+    el.textContent = fs.readFileSync(path.join(STATIC, rel), 'utf8');
+    window.document.head.appendChild(el);
+  };
+  // Default tests to Vietnamese so assertions on Vietnamese UI copy stay valid;
+  // i18n coverage flips locale explicitly in dedicated tests.
+  try { window.localStorage.setItem('otp_locale', 'vi'); } catch { /* ignore */ }
+  inject('i18n.js');
+  inject('locales/en.js');
+  inject('locales/vi.js');
+  inject('locales/zh.js');
+  inject('locales/ru.js');
+  inject('app.js');
   open.add(dom);
 
   // Mirror the bindings onto the window object so tests can reach them by

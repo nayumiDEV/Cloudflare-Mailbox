@@ -1,6 +1,6 @@
 """Search, pagination, access control and session behaviour."""
 
-import app as app_module
+from app import main as app_module
 from conftest import create_user, grant_access, ingest
 
 

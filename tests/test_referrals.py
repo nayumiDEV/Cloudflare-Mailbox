@@ -1,6 +1,6 @@
 """Referral-code registration, permissions and admin controls."""
 
-import app as app_module
+from app import main as app_module
 from conftest import (
     clear_rate_limits,
     create_user,
