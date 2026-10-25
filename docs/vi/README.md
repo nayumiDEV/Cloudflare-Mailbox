@@ -132,6 +132,10 @@ docs/                Tài liệu (SETUP, DEPLOY, API)
 Xem [CONTRIBUTING.md](../../CONTRIBUTING.md). Vui lòng tuân theo
 [Code of Conduct](../../CODE_OF_CONDUCT.md).
 
+## Community links
+
+[LINUX DO Community](https://linux.do/)
+
 ## Giấy phép
 
 [MIT](../../LICENSE)

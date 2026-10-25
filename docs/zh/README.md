@@ -132,6 +132,10 @@ docs/                文档（SETUP、DEPLOY、API）
 参见 [CONTRIBUTING.md](../../CONTRIBUTING.md)。请遵守
 [行为准则](../../CODE_OF_CONDUCT.md)。
 
+## Community links
+
+[LINUX DO Community](https://linux.do/)
+
 ## 许可证
 
 [MIT](../../LICENSE)

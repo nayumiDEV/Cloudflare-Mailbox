@@ -132,6 +132,10 @@ docs/                Документация (SETUP, DEPLOY, API)
 Смотрите [CONTRIBUTING.md](../../CONTRIBUTING.md). Пожалуйста, соблюдайте
 [Кодекс поведения](../../CODE_OF_CONDUCT.md).
 
+## Community links
+
+[LINUX DO Community](https://linux.do/)
+
 ## Лицензия
 
 [MIT](../../LICENSE)

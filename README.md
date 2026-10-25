@@ -141,6 +141,10 @@ docs/                Documentation (SETUP, DEPLOY, API, SEND)
 See [CONTRIBUTING.md](CONTRIBUTING.md). Please follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).
 
+## Community links
+
+[LINUX DO Community](https://linux.do/)
+
 ## License
 
 [MIT](LICENSE)
